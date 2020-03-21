@@ -124,4 +124,8 @@ contract ChainList is Ownable {
         }
         return forSale;
     }
+
+    function sayHello() public view returns (string memory) {
+        return "Hello!";
+    }
 }
