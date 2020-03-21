@@ -16,6 +16,7 @@
     "lite-server": "^2.3.0"
   },
   "dependencies": {
+    "@truffle/contract": "^4.1.13",
     "dotenv": "^6.0.0",
     "truffle-hdwallet-provider": "^1.0.17"
   }
