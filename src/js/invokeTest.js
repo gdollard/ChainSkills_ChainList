@@ -3,6 +3,7 @@
  */
 
 var Web3 = require('web3');
+Web3.providers.HttpProvider.prototype.sendAsync = Web3.providers.HttpProvider.prototype.send
 var ganacheProvider = new Web3.providers.HttpProvider("http://localhost:7545");
 var web3 = new Web3(ganacheProvider);
 const inboxArtifact = require('../../build/contracts/Inbox.json');
@@ -10,12 +11,19 @@ var truffleContract = require("@truffle/contract");
 let inboxContract = truffleContract(inboxArtifact);
 inboxContract.setProvider(ganacheProvider);
 
+const didJWT = require('did-jwt');
 const chainListArtifact = require('../../build/contracts/ChainList.json');
 var truffleContract = require("@truffle/contract");
 let chainListContract = truffleContract(chainListArtifact);
 chainListContract.setProvider(ganacheProvider);
 
+const ethereumDIDRegistryArtifact = require('../../build/contracts/EthereumDIDRegistry.json');
+let ethereumDIDRegistryContract = truffleContract(ethereumDIDRegistryArtifact);
+ethereumDIDRegistryContract.setProvider(ganacheProvider);
 
+const EthrDID = require('ethr-did');
+
+web3.eth.getAccounts((error, accounts) => console.log("Default Account: ", accounts[0]));
 const ganache_account_0 = '0x207526Be94a4F1DB646a8291Fe0A99327B2338a8';
 const balance = web3.eth.getBalance(ganache_account_0, (err, wei) => {
     const b = web3.utils.fromWei(wei, "ether")
@@ -52,10 +60,59 @@ const callSellArticle = async() => {
         console.log("Promise Rejected", err)});
 }
 
+const callGetIdentityOwner = async() => {
+    await ethereumDIDRegistryContract.deployed().then(instance => {
+        console.log("We have a Registry contract instance..");
+        instance.identityOwner(ganache_account_0).then
+        (value => {console.log("Identity Owner return value : ", value);});
+    }).then((txnID) => {}).catch(function (err) {
+        console.log("Promise Rejected", err)});
+}
+
+const doEthrDIDStuff = async() => {
+    const keypair = EthrDID.createKeyPair();
+    // Save keypair somewhere safe
+    //const ethrDid = new EthrDID({...keypair, provider});
+    
+    const signer = didJWT.SimpleSigner(keypair.privateKey);
+    const ethrDid = new EthrDID({provider: ganacheProvider, address: keypair.address,  signer: signer});
+
+    // await ethrDid.createSigningDelegate().then((txnID) => {}).catch(function (err) {
+    //     console.log("ethrDID create signing delegate failed", err)});
+    //console.log(">>>>> Key Pair: ", keypair);
+    //console.log("ethrDID: " + ethrDid);
+
+    
+    const helloJWT = await ethrDid.signJWT({hello: 'world'});
+    console.log("The JWT:", helloJWT);
+
+    // now verify the token
+    require('ethr-did-resolver')();
+    const {payload, issuer} = await ethrDid.verifyJWT(helloJWT);
+    console.log(`payload: ${payload}`);
+    // Issuer contains the DID of the signing identity
+    console.log(issuer);
+}
+
+const doJWTStuff = () => {
+    const didJWT = require('did-jwt');
+    const signer = didJWT.SimpleSigner('278a5de700e29faae8e40e366ec5012b5ec63d36ec77e8a2417154cc1d25383f');
+
+    let jwt = '';
+    didJWT.createJWT({aud: 'did:ethr:0xf3beac30c498d9e26865f34fcaa57dbb935b0d74', exp: 1957463421, name: 'uPort Developer'},
+                 {alg: 'ES256K-R', issuer: 'did:ethr:0xf3beac30c498d9e26865f34fcaa57dbb935b0d74', signer}).then( response =>
+                 { jwt = response;
+                    console.log("+++: ", jwt); });
+
+    //console.log(">>: ", jwt);
+}
 
 
 console.log("Calling contract functions..");
 // callGetGreeting();
 //callGetNumberOfArticles();
 //callGetArticlesForSale();
-callSellArticle();
+//callSellArticle();
+callGetIdentityOwner();
+//doEthrDIDStuff();
+//doJWTStuff();

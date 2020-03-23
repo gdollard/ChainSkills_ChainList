@@ -17,7 +17,9 @@
   },
   "dependencies": {
     "@truffle/contract": "^4.1.13",
+    "did-jwt": "^4.0.0",
     "dotenv": "^6.0.0",
+    "ethr-did": "^1.1.0",
     "truffle-hdwallet-provider": "^1.0.17"
   }
 }
