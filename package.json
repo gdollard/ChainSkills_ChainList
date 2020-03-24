@@ -19,7 +19,9 @@
     "@truffle/contract": "^4.1.13",
     "did-jwt": "^4.0.0",
     "dotenv": "^6.0.0",
+    "esm": "^3.2.25",
     "ethr-did": "^1.1.0",
+    "ethr-did-resolver": "^2.2.0",
     "truffle-hdwallet-provider": "^1.0.17"
   }
 }

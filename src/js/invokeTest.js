@@ -1,7 +1,7 @@
 /**
  * This file interacts with various contracts on the Ganache network using web3js
  */
-
+require = require("esm")(module/*, options*/)
 var Web3 = require('web3');
 Web3.providers.HttpProvider.prototype.sendAsync = Web3.providers.HttpProvider.prototype.send
 var ganacheProvider = new Web3.providers.HttpProvider("http://localhost:7545");
@@ -20,8 +20,9 @@ chainListContract.setProvider(ganacheProvider);
 const ethereumDIDRegistryArtifact = require('../../build/contracts/EthereumDIDRegistry.json');
 let ethereumDIDRegistryContract = truffleContract(ethereumDIDRegistryArtifact);
 ethereumDIDRegistryContract.setProvider(ganacheProvider);
-
 const EthrDID = require('ethr-did');
+
+
 
 web3.eth.getAccounts((error, accounts) => console.log("Default Account: ", accounts[0]));
 const ganache_account_0 = '0x207526Be94a4F1DB646a8291Fe0A99327B2338a8';
@@ -105,7 +106,20 @@ const doJWTStuff = () => {
                     console.log("+++: ", jwt); });
 
     //console.log(">>: ", jwt);
-}
+};
+
+const resolveDIDDocument = () => {
+
+    // this value will change between deployments
+    const didRegistryAddress = '0x68342D370d2660625239296fC6C3b7668f85ea85';
+    const providerConfig = { rpcUrl: 'http://localhost:7545', registry: didRegistryAddress };
+    const Resolver = require('did-resolver');
+    const ethrDid =  require('ethr-did-resolver').getResolver(providerConfig);
+    let resolver = new Resolver.Resolver(ethrDid);
+    console.log(">>> ", resolver);
+
+ 
+};
 
 
 console.log("Calling contract functions..");
@@ -113,6 +127,7 @@ console.log("Calling contract functions..");
 //callGetNumberOfArticles();
 //callGetArticlesForSale();
 //callSellArticle();
-callGetIdentityOwner();
+//callGetIdentityOwner();
 //doEthrDIDStuff();
 //doJWTStuff();
+resolveDIDDocument();

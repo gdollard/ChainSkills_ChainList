@@ -1,3 +1,6 @@
+import { Resolver } from 'did-resolver'
+import getResolver from 'ethr-did-resolver'
+
 App = {
     web3Provider: null,
     contracts: {},
