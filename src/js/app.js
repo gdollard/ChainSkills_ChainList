@@ -1,5 +1,7 @@
 import { Resolver } from 'did-resolver'
 import getResolver from 'ethr-did-resolver'
+import didJWT from 'did-jwt';
+const jwt = require('did-jwt');
 
 App = {
     web3Provider: null,
@@ -38,6 +40,22 @@ App = {
         $('#account').text(App.account);
         const balance = await window.web3.eth.getBalance(App.account);
         $('#accountBalance').text(window.web3.utils.fromWei(balance, "ether") + " ETH");
+    },
+
+    resolveDIDDocument: async () => {
+        const signer = jwt.SimpleSigner(keypair.privateKey);
+        const ethrDid = new EthrDID({provider: ganacheProvider, address: keypair.address,  signer: signer});
+        const didRegistryAddress = '0x68342D370d2660625239296fC6C3b7668f85ea85';
+        const providerConfig = { rpcUrl: 'http://localhost:7545', registry: registry.address }
+
+        // getResolver will return an object with a key/value pair of { "ethr": resolver } where resolver is a function used by the generic did resolver. 
+        const ethrDidResolver = getResolver(providerConfig)
+        const didResolver = Resolver(ethrDidResolver)
+
+        didResolver.resolve('did:ethr:0xf3beac30c498d9e26865f34fcaa57dbb935b0d74').then(doc => console.log)
+
+        // You can also use ES7 async/await syntax
+        const doc = await didResolver.resolve('did:ethr:0xf3beac30c498d9e26865f34fcaa57dbb935b0d74')
     },
 
     initContract: async () => {
