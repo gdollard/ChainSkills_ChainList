@@ -8,7 +8,7 @@ const HttpProvider = require('ethjs-provider-http')
 let provider = new HttpProvider('https://ropsten.infura.io/v3/82fa156d2820477885af5607d839f448')
 //Registery address for ethr did
 const registryAddress = '0xdCa7EF03e98e0DC2B855bE647C39ABe984fcF21B'
-const providerConfig = {rpcUrl: 'https://rinkeby.infura.io/ethr-did', registry: registryAddress}
+const providerConfig = {rpcUrl: 'https://ropsten.infura.io/v3/82fa156d2820477885af5607d839f448', registry: registryAddress}
 const resolver = require('did-resolver').default;
 const getResolver = require('ethr-did-resolver').getResolver
 const EthrDID = require('ethr-did');
@@ -26,7 +26,7 @@ let test = async () => {
         HDwalletProvider,
         registry: registryAddress
     })
-   // console.log('Ethr DID\n\n', ethrDid)
+    console.log('Ethr DID\n\n', ethrDid)
 
     let did = ethrDid.did
 
@@ -34,11 +34,11 @@ let test = async () => {
     //const didResolver = resolver(ethrDidResolver)
     //didResolver.resolve(did).then(doc => console.log("jskldklj", doc));
 
-    const providerConfig = {
-        networks: [
-          { name: "0x3", rpcUrl: "https://ropsten.infura.io/v3/82fa156d2820477885af5607d839f448" }
-        ]
-      }
+    // const providerConfig = {
+    //     networks: [
+    //       { name: "0x3", rpcUrl: "https://ropsten.infura.io/v3/82fa156d2820477885af5607d839f448" }
+    //     ]
+    //   }
 
     //Registering Ethr Did To Resolver
     getResolver({
@@ -51,9 +51,11 @@ let test = async () => {
         .then(didDocument => {
             console.log('\n\nEthr DID Document\n\n')
             console.dir(didDocument)
+            process.exit()
         })
         .catch(error => {
             console.error(error)
+            process.exit()
         })
 }
 
