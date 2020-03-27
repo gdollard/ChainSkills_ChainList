@@ -11,7 +11,25 @@ const DIDRegistryABI = [[{"constant":false,"inputs":[{"name":"identity","type":"
 const didRegistryContract = new web3.eth.Contract(DIDRegistryABI, DIDRegistryContractAddress_Ropsten);
 
 // listen to events from the first block in the chain to the latest...
-didRegistryContract.events.DIDOwnerChanged({fromBlock: 	7462390, toBlock: 'latest'}, (err, events) => {console.log(events.length);})
-.on('data', (event) => {console.log('Event: ', event)});
 
+
+
+const showPastContractEvents = () => {
+    didRegistryContract.getPastEvents('AllEvents',
+    {
+        fromBlock: 7462390,
+        toBlock: "latest"
+    },
+    (err, events) => {console.log("QQQQ ", events.length);});
+};
+
+const callChangeOwner = async () => {
+    let instance = await didRegistryContract.deployed();
+    instance.changeOwner(ropsten_0_address, ropsten_1_address, {from: ropsten_0_address}, function() {
+        console.log("Pending changing owner..");
+    });
+}
+
+//showPastContractEvents();
+callChangeOwner();
 

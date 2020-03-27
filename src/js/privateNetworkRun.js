@@ -4,22 +4,22 @@
 require = require("esm")(module/*, options*/)
 var Web3 = require('web3');
 Web3.providers.HttpProvider.prototype.sendAsync = Web3.providers.HttpProvider.prototype.send
-var ganacheProvider = new Web3.providers.HttpProvider("http://localhost:7545");
-var web3 = new Web3(ganacheProvider);
+var privateNetworkProvider = new Web3.providers.HttpProvider("http://localhost:8545");
+var web3 = new Web3(privateNetworkProvider);
 const inboxArtifact = require('../../build/contracts/Inbox.json');
 var truffleContract = require("@truffle/contract");
 let inboxContract = truffleContract(inboxArtifact);
-inboxContract.setProvider(ganacheProvider);
+inboxContract.setProvider(privateNetworkProvider);
 
 const didJWT = require('did-jwt');
 const chainListArtifact = require('../../build/contracts/ChainList.json');
 var truffleContract = require("@truffle/contract");
 let chainListContract = truffleContract(chainListArtifact);
-chainListContract.setProvider(ganacheProvider);
+chainListContract.setProvider(privateNetworkProvider);
 
 const ethereumDIDRegistryArtifact = require('../../build/contracts/EthereumDIDRegistry.json');
 let ethereumDIDRegistryContract = truffleContract(ethereumDIDRegistryArtifact);
-ethereumDIDRegistryContract.setProvider(ganacheProvider);
+ethereumDIDRegistryContract.setProvider(privateNetworkProvider);
 const EthrDID = require('ethr-did');
 
 
@@ -27,6 +27,9 @@ const EthrDID = require('ethr-did');
 web3.eth.getAccounts((error, accounts) => console.log("Default Account: ", accounts[0]));
 const ganache_account_0 = '0x207526Be94a4F1DB646a8291Fe0A99327B2338a8';
 const ganache_account_1 = '0x4DeDB748DA0184bFFb44cA074c116c68C9175D39';
+const chainskills_account_0 = '0x9932aee2b8be4bca94664bf576410f1383c37f6a';
+const chainskills_account_1 = '0x024e37cdecc2835ce39ddefa8366c2f95c5b1a56';
+const chainskills_account_2 = '0x2d419b55bf9cd3ff96cfc2cb5c1d3d631289b49c';
 
 const balance = web3.eth.getBalance(ganache_account_0, (err, wei) => {
     const b = web3.utils.fromWei(wei, "ether")
@@ -78,7 +81,7 @@ const doEthrDIDStuff = async() => {
     //const ethrDid = new EthrDID({...keypair, provider});
     
     const signer = didJWT.SimpleSigner(keypair.privateKey);
-    const ethrDid = new EthrDID({provider: ganacheProvider, address: keypair.address,  signer: signer});
+    const ethrDid = new EthrDID({provider: privateNetworkProvider, address: keypair.address,  signer: signer});
 
     // await ethrDid.createSigningDelegate().then((txnID) => {}).catch(function (err) {
     //     console.log("ethrDID create signing delegate failed", err)});
@@ -125,7 +128,7 @@ const resolveDIDDocument = () => {
 
 const changeOwner = async () => {
     let didReg = await ethereumDIDRegistryContract.deployed();
-    let txnReceipt = await didReg.changeOwner(ganache_account_0, ganache_account_1, {from: ganache_account_0, gas: 5000000}).then((err, event) => {
+    let txnReceipt = await didReg.changeOwner(chainskills_account_0, chainskills_account_1, {from: chainskills_account_0, gas: 5000000}).then((err, event) => {
         console.log("NNNNN", event);
     }).catch(error => { console.log('caught', error.message); });
     console.log("VVVVV ", txnReceipt);

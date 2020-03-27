@@ -15,7 +15,7 @@ var HDwalletProvider =  new HDWalletProvider(process.env.MNEMONIC, "https://rops
 var web3 = new Web3(HDwalletProvider);
 const artifacts = require('../../build/contracts/Inbox.json');
 const Contract = require("@truffle/contract");
-let DidReg = Contract(DidRegistryContract);
+const DidReg = Contract(DidRegistryContract);
 DidReg.setProvider(HDwalletProvider);
 //let InboxContract = Contract(artifacts);
 //InboxContract.setProvider(HDwalletProvider);
@@ -53,9 +53,40 @@ const callVerifyOwner = async () => {
 /**
  * Change ownership from address 0 to address 1
  */
+const setupEventListener = async () => {
+    let didReg = await DidReg.deployed();
+    didReg.getPastEvents('AllEvents',
+    {
+        fromBlock: 7462390,
+        toBlock: "latest"
+    },
+    (err, events) => {console.log("QQQQ ", events.length);}
+    );
+    // let didReg = await DidReg.deployed();
+    // var event = didReg.DIDOwnerChanged({}, {fromBlock: 7462390, toBlock: "latest"});
+    // event.watch(function(error, result) {
+    //     if(!error) {
+    //         console.log("HHHHHHH");
+    //     }
+    // });
+    //didReg.events.DIDOwnerChanged({fromBlock: "latest"}, (error, event) => {Console.log("We have an event: ", event);}).
+    // on('data', (event) => {
+    //     console.log("BBBBBB");
+    // }).
+    // on('connected', (event) => {
+    //     console.log("CCCCCC");
+    // }).
+    // on('error', (event) => {
+    //     console.log("DDDDDDD");
+    // });
+};
+
 const changeOwner = async () => {
     let didReg = await DidReg.deployed();
-    didReg.changeOwner(ropsten_0_address, ropsten_1_address);
+    let txnReceipt = await didReg.changeOwner(ropsten_0_address, ropsten_1_address, {from: ropsten_0_address, gas: 5000000}).then((err, event) => {
+        console.log("NNNNN", event);
+    }).catch(error => { console.log('caught', error.message); });
+    console.log("VVVVV ", txnReceipt);
 };
 
 const listenToRegistryEvents = async () => {
@@ -77,6 +108,8 @@ const listenToRegistryEvents = async () => {
 
 };
 
-listenToRegistryEvents();
+//listenToRegistryEvents();
 //callGetGreeting();
 callVerifyOwner();
+//setupEventListener();
+//changeOwner();
