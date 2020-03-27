@@ -10,18 +10,26 @@ const EthrDID = require('ethr-did');
 
 //Ethereum DID Registery address 
 const ethereumDIDRegistryAddress = '0xdCa7EF03e98e0DC2B855bE647C39ABe984fcF21B'
-const ropsten_0_address = '0xEdAA87f3a3096bc7C0CE73971b1c463f20Cf3Af5';
-const ropsten_1_address = '0xB72fD1f1cC6ecbE44270a5E235e81d768cf1BF86';
 
 let test = async () => {
 
+    // get the accounts from the Ropsten network
+    const accounts =  await web3.eth.getAccounts()
+    const keyPair = {
+        address: accounts[0],
+        privateKey: process.env.ACCOUNT_0_PKEY
+    }
+
     //Generating Eth keyPair {address, private key}
-    const keypair = EthrDID.createKeyPair()
-    //console.log("Keypair: ", keypair);
+    //const keyPair = EthrDID.createKeyPair()
+    // const ropsten_0_keypair = {
+    //     address: ropsten_0_address,
+    //     privateKey: 
+    // }
 
     //Generating Ethr DID
     const ethrDid = new EthrDID({
-        ...keypair,
+        ...keyPair,
         web3,
         registry: ethereumDIDRegistryAddress
     })
