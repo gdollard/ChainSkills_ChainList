@@ -49,7 +49,8 @@ let test = async () => {
     const didResolver = new Resolver(ethrDidResolver)
     console.log("BBB: ", didResolver)
     
-    didResolver.resolve(did).then(doc => console.log("XXX", doc))
+    didResolver.resolve(did).then(doc => {console.log("XXX", doc)
+        process.exit()})
 
     // //Resolving Ethr DID to DID document
     // Resolver(did)
