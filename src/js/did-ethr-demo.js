@@ -16,7 +16,7 @@ const EthrDID = require('ethr-did');
 let test = async () => {
     
 
-    //Generating Eth keyPair
+    //Generating Eth keyPair {address, private key}
     const keypair = EthrDID.createKeyPair()
     //console.log("Keypair: ", keypair);
 
@@ -26,43 +26,22 @@ let test = async () => {
         HDwalletProvider,
         registry: registryAddress
     })
-    //console.log('Ethr DID\n\n', ethrDid)
+    
 
     let did = ethrDid.did
-
-    //const ethrDidResolver = getResolver({HDwalletProvider})
-    //const didResolver = resolver(ethrDidResolver)
-    //didResolver.resolve(did).then(doc => console.log("jskldklj", doc));
-
-    // const providerConfig = {
-    //     networks: [
-    //       { name: "0x3", rpcUrl: "https://ropsten.infura.io/v3/82fa156d2820477885af5607d839f448" }
-    //     ]
-    //   }
 
     //Registering Ethr Did To Resolver
     const ethrDidResolver = getResolver({
         web3,
         registry: registryAddress,
     })
-    console.log("AAA: ", Resolver)
-    const didResolver = new Resolver(ethrDidResolver)
-    console.log("BBB: ", didResolver)
     
+    // create a DID resolver based on the ethr DID resolver
+    const didResolver = new Resolver(ethrDidResolver)
+    
+    // resolve the DID document for the given DID identity
     didResolver.resolve(did).then(doc => {console.log("XXX", doc)
         process.exit()})
-
-    // //Resolving Ethr DID to DID document
-    // Resolver(did)
-    //     .then(didDocument => {
-    //         console.log('\n\n************ Ethr DID Document\n\n')
-    //         console.dir(didDocument)
-    //         process.exit()
-    //     })
-    //     .catch(error => {
-    //         console.error(error)
-    //         process.exit()
-    //     })
 }
 
 test()
