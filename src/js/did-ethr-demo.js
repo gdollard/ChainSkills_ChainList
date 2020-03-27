@@ -1,6 +1,8 @@
 const HDWalletProvider = require("truffle-hdwallet-provider");
 require('dotenv').config(); //need this module to retrieve the infura mnemonic and API key
 var Web3 = require('web3');
+
+// Create the wallet provider which will sign transactions using my mnemonic
 var HDwalletProvider =  new HDWalletProvider(process.env.MNEMONIC, "https://ropsten.infura.io/v3/" + process.env.INFURA_API_KEY);
 var web3 = new Web3(HDwalletProvider);
 
@@ -19,13 +21,6 @@ let test = async () => {
         address: accounts[0],
         privateKey: process.env.ACCOUNT_0_PKEY
     }
-
-    //Generating Eth keyPair {address, private key}
-    //const keyPair = EthrDID.createKeyPair()
-    // const ropsten_0_keypair = {
-    //     address: ropsten_0_address,
-    //     privateKey: 
-    // }
 
     //Generating Ethr DID
     const ethrDid = new EthrDID({
