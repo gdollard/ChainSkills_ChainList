@@ -12,8 +12,9 @@ const EthrDID = require('ethr-did');
 
 //Ethereum DID Registery address 
 const ethereumDIDRegistryAddress = '0xdCa7EF03e98e0DC2B855bE647C39ABe984fcF21B'
+let ethrDid
 
-let test = async () => {
+let createEthrDID = async () => {
 
     // get the accounts from the Ropsten network
     const accounts =  await web3.eth.getAccounts()
@@ -23,11 +24,12 @@ let test = async () => {
     }
 
     //Generating Ethr DID
-    const ethrDid = new EthrDID({
+    ethrDid = new EthrDID({
         ...keyPair,
         web3,
         registry: ethereumDIDRegistryAddress
     })
+    
     
     // the full DID compatible string 
     let didString = ethrDid.did
@@ -42,8 +44,24 @@ let test = async () => {
     const didResolver = new Resolver(ethrDidResolver)
     
     // resolve the DID document for the given DID identity
-    didResolver.resolve(didString).then(doc => {console.log("DID Document", doc)
+    didResolver.resolve(didString).then(doc => {
+        console.log("DID Document", doc)
         process.exit()})
+
+    const helloJWT = await ethrDid.signJWT({hello: 'world'})
+    console.log("JWT: ", helloJWT)
+
+    const {payload, issuer} = ethrDid.verifyJWT(helloJWT)
+    // payload contains the JavaScript object that was signed together with a few JWT specific attributes
+    console.log("Verified Payload: ", payload)
+    // Issuer contains the DID of the signing identity
+    console.log("iSSUER: ", issuer)
 }
 
-test()
+let signJWT = async () => {
+    
+    
+}
+
+createEthrDID()
+signJWT()
