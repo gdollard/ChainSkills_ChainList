@@ -10,6 +10,9 @@ const Resolver = require('did-resolver').Resolver
 const getResolver = require('ethr-did-resolver').getResolver
 const EthrDID = require('ethr-did');
 
+const didJWT = require('did-jwt')
+const { SimpleSigner } = require('did-jwt')
+
 //Ethereum DID Registery address 
 const ethereumDIDRegistryAddress = '0xdCa7EF03e98e0DC2B855bE647C39ABe984fcF21B'
 let ethrDid
@@ -30,7 +33,6 @@ let createEthrDID = async () => {
         registry: ethereumDIDRegistryAddress
     })
     
-    
     // the full DID compatible string 
     let didString = ethrDid.did
 
@@ -47,21 +49,29 @@ let createEthrDID = async () => {
     didResolver.resolve(didString).then(doc => {
         console.log("DID Document", doc)
         process.exit()})
+}
 
-    const helloJWT = await ethrDid.signJWT({hello: 'world'})
+/**
+ * Sign and verify a JWT.
+ */
+let signJWT = async () => {
+    const helloJWT = await ethrDid.signJWT({alg : 'ES256K-R', hello: 'world'})
     console.log("JWT: ", helloJWT)
 
-    const {payload, issuer} = ethrDid.verifyJWT(helloJWT)
+    //await ethrDid.createSigningDelegate().catch(error => {console.log("Error creating a signing delegate", error.message)})
+
+    const {payload, issuer} = await ethrDid.verifyJWT(helloJWT).then(data => {console.log("GGGG ", data)}).catch(error => {console.log("Error when verifying JWT: ", error)})
     // payload contains the JavaScript object that was signed together with a few JWT specific attributes
-    console.log("Verified Payload: ", payload)
+    //console.log("Verified Payload: ", payload)
     // Issuer contains the DID of the signing identity
-    console.log("iSSUER: ", issuer)
+    //console.log("iSSUER: ", issuer)
+
 }
 
-let signJWT = async () => {
-    
-    
+let doStuff = async () => {
+    await createEthrDID()
+    signJWT()
 }
 
-createEthrDID()
-signJWT()
+doStuff()
+
