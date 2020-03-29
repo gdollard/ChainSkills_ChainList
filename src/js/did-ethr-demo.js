@@ -1,4 +1,5 @@
 var Web3 = require('web3');
+//Web3.providers.HttpProvider.prototype.sendAsync = Web3.providers.HttpProvider.prototype.send
 require('dotenv').config(); //need this module to retrieve the infura mnemonic and API key
 const HDWalletProvider = require("truffle-hdwallet-provider");
 
@@ -11,7 +12,6 @@ const getResolver = require('ethr-did-resolver').getResolver
 const EthrDID = require('ethr-did');
 
 const didJWT = require('did-jwt')
-const { SimpleSigner } = require('did-jwt')
 
 //Ethereum DID Registery address 
 const ethereumDIDRegistryAddress = '0xdCa7EF03e98e0DC2B855bE647C39ABe984fcF21B'
@@ -26,7 +26,7 @@ let createEthrDID = async () => {
         privateKey: process.env.ACCOUNT_0_PKEY
     }
 
-    const simpleSigner = SimpleSigner('0x92dd08591c87f6b860fd2bb4895d593f9f240a6f289883a7d5d625494eaeda1d')
+    const simpleSigner = didJWT.SimpleSigner(keyPair.privateKey)
     
     
     //Registering Ethr Did To Resolver
@@ -45,15 +45,34 @@ let createEthrDID = async () => {
         provider: web3,
         registry: ethereumDIDRegistryAddress
     })
+
+    const helloJWT = await ethrDid.signJWT({hello: 'world'})
+    console.log("Data from signJWT: ", helloJWT)
+    console.log("Decoded JWT created from ethrDID:", didJWT.decodeJWT(helloJWT))
+    
+    let jwt = '';
+    // didJWT.createJWT({ aud: keyPair.address, exp: 1957463421, name: 'uPort Developer' },
+    //     { alg: `ES256K-R`, issuer: keyPair.address, simpleSigner }).then(jwt => {
+    //         console.log("Error at createJWT ", jwt) // this works fine
+
+    //         didJWT.verifyJWT(jwt, {resolver: didResolver, audience: keyPair.address }).then((verifiedRespone) => {
+    //             console.log(verifiedRespone)
+    //         })
+    //     }).catch(error => {
+    //         console.log("RRRRRR ", error)
+    //         process.exit()
+    //     })
+    const {payload, issuer} = await ethrDid.verifyJWT(helloJWT, {resolver: didResolver, audience: keyPair.address }).catch(error => {
+        console.log("Error from verifyJWT: ", error.message)
+        process.exit()
+    })
+
     // the full DID compatible string 
     let didString = ethrDid.did
 
     // resolve the DID document for the given DID identity
     didResolver.resolve(didString).then(doc => {
         console.log("DID Document", doc)
-        const helloJWT = ethrDid.signJWT({hello: 'world'})
-        console.log("JWT: ", helloJWT)
-        const {payload, issuer} = ethrDid.verifyJWT(helloJWT).then(data => {console.log("GGGG ", data)}).catch(error => {console.log("Error when verifying JWT: ", error)})
         })
 }
 
@@ -75,7 +94,7 @@ let signJWT = async () => {
 
 
     //await ethrDid.createSigningDelegate().catch(error => {console.log("Error creating a signing delegate", error.message)})
-    //const {payload, issuer} = await verifyJWT(helloJWT).catch(error => {console.log("Error when verifying JWT: ", error)})
+    const {payload, issuer} = await verifyJWT(helloJWT).catch(error => {console.log("Error when verifying JWT: ", error)})
     //const {payload, issuer} = await ethrDid.verifyJWT(helloJWT).then(data => {console.log("GGGG ", data)}).catch(error => {console.log("Error when verifying JWT: ", error)})
     // payload contains the JavaScript object that was signed together with a few JWT specific attributes
     //console.log("Verified Payload: ", payload)
@@ -86,6 +105,7 @@ let signJWT = async () => {
 
 let doStuff = async () => {
     await createEthrDID()
+   
     //signJWT()
 }
 
