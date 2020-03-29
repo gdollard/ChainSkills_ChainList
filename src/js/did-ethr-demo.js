@@ -23,15 +23,26 @@ let createEthrDID = async () => {
     const keypairAlt = EthrDID.createKeyPair()
     // get the accounts from the Ropsten network
     const accounts =  await web3.eth.getAccounts()
-    // const keyPair = {
-    //     address: accounts[0],
-    //     privateKey: process.env.ACCOUNT_0_PKEY
-    // }
+    const keyPair = {
+        address: accounts[0],
+        privateKey: process.env.ACCOUNT_0_PKEY
+    }
 
+    console.log("keypairAlt ", keypairAlt)
+    console.log("keyPair", keyPair)
     
     const keyPair_address = 'did:ethr:0xEdAA87f3a3096bc7C0CE73971b1c463f20Cf3Af5'
     const signer = SimpleSigner(keypairAlt.privateKey)
-    const ethKey = 'did:ethr:' + keypairAlt.address
+
+    //Generating Ethr DID
+    ethrDid = new EthrDID({
+        ...keypairAlt,
+        provider: web3,
+        registry: ethereumDIDRegistryAddress
+    })
+
+    // this is the complete DID ID (the ethereum address formatted as an ether DID address )
+    const didAddress = ethrDid.did//'did:ethr:' + keypairAlt.address
     
     //Registering Ethr Did To Resolver
     const ethrDidResolver = getResolver({
@@ -42,12 +53,7 @@ let createEthrDID = async () => {
     // create a DID resolver based on the ethr DID resolver
     const didResolver = new Resolver(ethrDidResolver)
 
-    //Generating Ethr DID
-    ethrDid = new EthrDID({
-        ...keypairAlt,
-        provider: web3,
-        registry: ethereumDIDRegistryAddress
-    })
+    
 
     //const helloJWT = await ethrDid.signJWT({claims: { name: 'Joe Lubin' }})
     //console.log("Data from signJWT: ", helloJWT)
@@ -55,8 +61,9 @@ let createEthrDID = async () => {
     
     
     let jwt = '';
-    const theJWT = await didJWT.createJWT({ aud: ethKey, exp: 1957463421, name: 'uPort Developer' },
-         { alg: `ES256K-R`, issuer: ethKey, signer }).catch(error => {
+    
+    const theJWT = await didJWT.createJWT({ aud: didAddress, exp: 1957463421, name: 'uPort Developer' },
+         { alg: `ES256K-R`, issuer: didAddress, signer }).catch(error => {
              console.log("Error creating/verifying JWT:", error.message)
              process.exit()
          })
@@ -64,41 +71,18 @@ let createEthrDID = async () => {
    
     didJWT.decodeJWT(theJWT)
 
-    didJWT.verifyJWT(theJWT, {resolver: didResolver, audience: ethKey }).then((verifiedResponse) => {
+    // when verifying the token I need to pass the audience argument if it was specified as the 'aud' argument in the createJWT call
+    didJWT.verifyJWT(theJWT, {resolver: didResolver, audience: didAddress }).then((verifiedResponse) => {
     console.log("Verified response from verifyJWT: ", verifiedResponse)
     }).catch(error => {
         console.log("lslkdjlksjdskljdsjd", error.message)
         process.exit()
     })
 
-
-
-    
-
-    
-    // await ethrDid.verifyJWT(helloJWT, {resolver: didResolver, audience: keyPair_address }).catch(error => {
-    //          console.log("Error from verifyJWT: ", error.message)
-    //         process.exit()
-    //     })
-    // didJWT.createJWT({ aud: keyPair.address, exp: 1957463421, name: 'uPort Developer' },
-    //     { alg: `ES256K-R`, issuer: keyPair.address, simpleSigner }).then(jwt => {
-    //         console.log("Error at createJWT ", jwt) // this works fine
-
-    //         didJWT.verifyJWT(jwt, {resolver: didResolver, audience: keyPair.address }).then((verifiedRespone) => {
-    //             console.log(verifiedRespone)
-    //         })
-    //     }).catch(error => {
-    //         console.log("RRRRRR ", error)
-    //         process.exit()
-    //     })
-    // const {payload, issuer} = await ethrDid.verifyJWT(helloJWT, {resolver: didResolver, audience: keyPair.address }).catch(error => {
-    //     console.log("Error from verifyJWT: ", error.message)
-    //     process.exit()
-    //})
-
     // resolve the DID document for the given DID identity
     didResolver.resolve(ethrDid.did).then(doc => {
         console.log("DID Document", doc)
+        process.exit()
         })
 }
 
