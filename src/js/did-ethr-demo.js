@@ -20,16 +20,18 @@ let ethrDid
 
 let createEthrDID = async () => {
 
+    const keypairAlt = EthrDID.createKeyPair()
     // get the accounts from the Ropsten network
     const accounts =  await web3.eth.getAccounts()
-    const keyPair = {
-        address: accounts[0],
-        privateKey: process.env.ACCOUNT_0_PKEY
-    }
+    // const keyPair = {
+    //     address: accounts[0],
+    //     privateKey: process.env.ACCOUNT_0_PKEY
+    // }
 
-    //const simpleSigner = didJWT.SimpleSigner(keyPair.privateKey)
-    const signer = SimpleSigner(keyPair.privateKey)
     
+    const keyPair_address = 'did:ethr:0xEdAA87f3a3096bc7C0CE73971b1c463f20Cf3Af5'
+    const signer = SimpleSigner(keypairAlt.privateKey)
+    const ethKey = 'did:ethr:' + keypairAlt.address
     
     //Registering Ethr Did To Resolver
     const ethrDidResolver = getResolver({
@@ -42,7 +44,7 @@ let createEthrDID = async () => {
 
     //Generating Ethr DID
     ethrDid = new EthrDID({
-        ...keyPair,
+        ...keypairAlt,
         provider: web3,
         registry: ethereumDIDRegistryAddress
     })
@@ -51,19 +53,23 @@ let createEthrDID = async () => {
     //console.log("Data from signJWT: ", helloJWT)
    // console.log("Decoded JWT created from ethrDID:", didJWT.decodeJWT(helloJWT))
     
-    const keyPair_address = 'did:ethr:0xEdAA87f3a3096bc7C0CE73971b1c463f20Cf3Af5'
+    
     let jwt = '';
-    const theJWT = await didJWT.createJWT({ aud: keyPair_address, exp: 1957463421, name: 'uPort Developer' },
-         { alg: `ES256K-R`, issuer: keyPair_address, signer }).then(jwt => {
-             console.log("JWT created via createJWT: ", didJWT.decodeJWT(jwt))
-             didJWT.verifyJWT(jwt, {resolver: didResolver, keyPair_address }).then((verifiedResponse) => {
-                console.log("Verified response from verifyJWT: ", verifiedResponse)
-            })
-
-         }).catch(error => {
+    const theJWT = await didJWT.createJWT({ aud: ethKey, exp: 1957463421, name: 'uPort Developer' },
+         { alg: `ES256K-R`, issuer: ethKey, signer }).catch(error => {
              console.log("Error creating/verifying JWT:", error.message)
              process.exit()
          })
+    
+   
+    didJWT.decodeJWT(theJWT)
+
+    didJWT.verifyJWT(theJWT, {resolver: didResolver, audience: ethKey }).then((verifiedResponse) => {
+    console.log("Verified response from verifyJWT: ", verifiedResponse)
+    }).catch(error => {
+        console.log("lslkdjlksjdskljdsjd", error.message)
+        process.exit()
+    })
 
 
 
