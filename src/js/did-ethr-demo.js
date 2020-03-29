@@ -32,6 +32,8 @@ let createEthrDID = async () => {
     console.log("keyPair", keyPair)
     
     const keyPair_address = 'did:ethr:0xEdAA87f3a3096bc7C0CE73971b1c463f20Cf3Af5'
+
+    // create the signer from the private key
     const signer = SimpleSigner(keypairAlt.privateKey)
 
     //Generating Ethr DID
@@ -82,7 +84,7 @@ let createEthrDID = async () => {
     // resolve the DID document for the given DID identity
     didResolver.resolve(ethrDid.did).then(doc => {
         console.log("DID Document", doc)
-        process.exit()
+        
         })
 }
 
