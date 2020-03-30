@@ -22,7 +22,7 @@ let ethrDid
 let createEthrDID = async () => {
 
     // get the accounts from the Ropsten network
-    const accounts =  await web3.eth.getAccounts()
+    //const accounts =  await web3.eth.getAccounts()
     const keyPair = {
         // the keypair below are ones from a Ropsten account but they seem to fail for JWT creation/verification in this scenario
         // from the ether-did repo: Unfortunately, web3 providers are not directly able to sign data in a way that is compliant with the JWT-ES256K standard.
@@ -33,7 +33,7 @@ let createEthrDID = async () => {
         address: process.env.EthrDID_ADDRESS,
         privateKey: process.env.EthrDID_PKEY
     }
-
+    
     // create the signer from the private key
     const signer = SimpleSigner(keyPair.privateKey)
 
@@ -44,6 +44,7 @@ let createEthrDID = async () => {
         registry: ethereumDIDRegistryAddress
     })
     
+
     //Registering Ethr Did To Resolver
     const ethrDidResolver = getResolver({
         web3,
@@ -66,10 +67,13 @@ let createEthrDID = async () => {
             didJWT.verifyJWT(theJWT, {resolver: didResolver, audience: ethrDid.did }).then((verifiedResponse) => {
                 console.log("Verified response from verifyJWT: ", verifiedResponse)
                 end()
+                }).catch(error => {
+                    console.log("Error verifying JWT: ", error.message)
+                    end(1)
                 })
             }).catch(error => {
              console.log("Error creating/verifying JWT:", error.message)
-             process.exitCode = 1
+             end(1)
          })
     
 
@@ -80,8 +84,8 @@ let createEthrDID = async () => {
     //    })
 }
 
-const end = () => {
-    process.exit()
+const end = (exitCode=0) => {
+    process.exit(exitCode)
 }
 
 let doStuff = async () => {
