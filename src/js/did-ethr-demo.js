@@ -24,6 +24,7 @@ let createEthrDID = async () => {
     const accounts =  await web3.eth.getAccounts()
     const keyPair = {
         // the keypair below are ones from a Ropsten account but they seem to fail for JWT creation/verification in this scenario
+        // from the ether-did repo: Unfortunately, web3 providers are not directly able to sign data in a way that is compliant with the JWT-ES256K standard.
         //address: accounts[0],
         //privateKey: process.env.ACCOUNT_0_PKEY
 
