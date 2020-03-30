@@ -42,9 +42,6 @@ let createEthrDID = async () => {
         provider: web3,
         registry: ethereumDIDRegistryAddress
     })
-
-    // this is the complete DID ID (the ethereum address formatted as an ether DID address )
-    const didAddress = ethrDid.did
     
     //Registering Ethr Did To Resolver
     const ethrDidResolver = getResolver({
@@ -52,45 +49,37 @@ let createEthrDID = async () => {
         registry: ethereumDIDRegistryAddress,
     })
     
-    // create a DID resolver based on the ethr DID resolver
+    /**
+     * create a DID resolver based on the ethr DID resolver, if using a different DID Method (uPort, nacl, https etc)
+     * I would pass that specific resolver to the Resolver object.
+     */
     const didResolver = new Resolver(ethrDidResolver)
     
-
-    //const helloJWT = await ethrDid.signJWT({aud: didAddress, exp: 1957463421, claims: { name: 'Joe Lubin' }, name: 'uPort Developer'})
-    //console.log("Data from signJWT: ", helloJWT)
-    //console.log("Decoded JWT created from ethrDID:", didJWT.decodeJWT(helloJWT))
-    
-    // create the JWT directly using the didJWT library
-    const theJWT = await didJWT.createJWT({ aud: didAddress, exp: 1957463421, claims: { name: 'Joe Lubin' }, name: 'uPort Developer' },
-         { alg: `ES256K-R`, issuer: didAddress, signer }).catch(error => {
+   
+    // create the JWT directly using the didJWT library, the issuer = eth did address of a trusted party
+    const theJWT = await didJWT.createJWT({ aud: ethrDid.did, exp: 1957463421, claims: { name: 'Joe Lubin' }, name: 'uPort Developer' },
+         { alg: `ES256K-R`, issuer: ethrDid.did, signer }).catch(error => {
              console.log("Error creating/verifying JWT:", error.message)
              process.exit()
          })
     
     // decode it just for debug purposes
-    //didJWT.decodeJWT(theJWT)
+    console.log("Unverified JWT:", didJWT.decodeJWT(theJWT))
 
     // when verifying the token I need to pass the audience argument if it was specified as the 'aud' argument in the createJWT call
-    didJWT.verifyJWT(theJWT, {resolver: didResolver, audience: didAddress }).then((verifiedResponse) => {
+    didJWT.verifyJWT(theJWT, {resolver: didResolver, audience: ethrDid.did }).then((verifiedResponse) => {
     console.log("Verified response from verifyJWT: ", verifiedResponse)
     }).catch(error => {
         console.log("Error trying to verify JWT: ", error.message)
         process.exit()
     })
 
-    // verify the token using my EthrDID, this doesn't work, getting error: mnidOrDid.match is not a function
-    // ethrDid.verifyJWT(helloJWT, {resolver: didResolver, audience: didAddress }).then((verifiedResponse) => {
-    //     console.log("Verified response from ethrDid.verifyJWT: ", verifiedResponse)
-    //     }).catch(error => {
-    //         console.log("Error trying to verify JWT using ethrDID: ", error.message)
-    //         process.exit()
-    //     })
 
     // resolve the DID document for the given DID identity
-    didResolver.resolve(ethrDid.did).then(doc => {
-        console.log("Resolved DID Document", doc)
+   // didResolver.resolve(ethrDid.did).then(doc => {
+      //  console.log("Resolved DID Document", doc)
         
-        })
+    //    })
 }
 
 
