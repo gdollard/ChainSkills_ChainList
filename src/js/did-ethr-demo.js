@@ -1,3 +1,4 @@
+const wtf = require('wtfnode');
 var Web3 = require('web3');
 //Web3.providers.HttpProvider.prototype.sendAsync = Web3.providers.HttpProvider.prototype.send
 require('dotenv').config(); //need this module to retrieve the infura mnemonic and API key
@@ -57,22 +58,28 @@ let createEthrDID = async () => {
     
    
     // create the JWT directly using the didJWT library, the issuer = eth did address of a trusted party
-    const theJWT = await didJWT.createJWT({ aud: ethrDid.did, exp: 1957463421, claims: { name: 'Joe Lubin' }, name: 'uPort Developer' },
-         { alg: `ES256K-R`, issuer: ethrDid.did, signer }).catch(error => {
+    didJWT.createJWT({ aud: ethrDid.did, exp: 1957463421, claims: { name: 'Joe Developer', admin: false, readMQTT: true }, name: 'Developer MTQQ Reader' },
+         { alg: `ES256K-R`, issuer: ethrDid.did, signer }).then(theJWT => {
+            // decode it just for debug purposes
+            console.log("Unverified JWT:", didJWT.decodeJWT(theJWT))
+            // when verifying the token I need to pass the audience argument if it was specified as the 'aud' argument in the createJWT call
+            didJWT.verifyJWT(theJWT, {resolver: didResolver, audience: ethrDid.did }).then((verifiedResponse) => {
+                console.log("Verified response from verifyJWT: ", verifiedResponse)
+                end()
+                }).catch(error => {
+                    console.log("Error trying to verify JWT: ", error.message)
+                    process.exitCode = 1
+        })
+            
+         }
+         ).catch(error => {
              console.log("Error creating/verifying JWT:", error.message)
-             process.exit()
+             process.exitCode = 1
          })
     
-    // decode it just for debug purposes
-    console.log("Unverified JWT:", didJWT.decodeJWT(theJWT))
+    
 
-    // when verifying the token I need to pass the audience argument if it was specified as the 'aud' argument in the createJWT call
-    didJWT.verifyJWT(theJWT, {resolver: didResolver, audience: ethrDid.did }).then((verifiedResponse) => {
-    console.log("Verified response from verifyJWT: ", verifiedResponse)
-    }).catch(error => {
-        console.log("Error trying to verify JWT: ", error.message)
-        process.exit()
-    })
+    
 
 
     // resolve the DID document for the given DID identity
@@ -82,9 +89,13 @@ let createEthrDID = async () => {
     //    })
 }
 
+const end = () => {
+    process.exit()
+}
 
 let doStuff = async () => {
-    await createEthrDID() 
+    createEthrDID()
+    //wtf.dump()
 }
 
 doStuff()

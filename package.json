@@ -25,6 +25,7 @@
     "ethr-did": "^1.1.0",
     "ethr-did-resolver": "^2.2.0",
     "truffle-hdwallet-provider": "^1.0.17",
-    "web3": "1.2.6"
+    "web3": "1.2.6",
+    "wtfnode": "^0.8.1"
   }
 }
