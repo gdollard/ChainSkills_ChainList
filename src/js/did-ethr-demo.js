@@ -17,7 +17,21 @@ const { SimpleSigner } = require('did-jwt')
 
 //Ethereum DID Registery address (smart contract)
 const ethereumDIDRegistryAddress = '0xdCa7EF03e98e0DC2B855bE647C39ABe984fcF21B'
+
+
+//Registering Ethr Did To Resolver
+const ethrDidResolver = getResolver({
+    web3,
+    registry: ethereumDIDRegistryAddress,
+})
+    
+/**
+ * create a DID resolver based on the ethr DID resolver, if using a different DID Method (uPort, nacl, https etc)
+ * I would pass that specific resolver to the Resolver object.
+ */
+const didResolver = new Resolver(ethrDidResolver)
 let ethrDid
+
 
 let createEthrDID = async () => {
 
@@ -44,37 +58,49 @@ let createEthrDID = async () => {
         registry: ethereumDIDRegistryAddress
     })
     
-
-    //Registering Ethr Did To Resolver
-    const ethrDidResolver = getResolver({
-        web3,
-        registry: ethereumDIDRegistryAddress,
+    const bobsKeyPair = EthrDID.createKeyPair()
+    const bobsDID = new EthrDID({
+        ...bobsKeyPair,
+        provider: web3,
+        registry: ethereumDIDRegistryAddress
     })
+
     
-    /**
-     * create a DID resolver based on the ethr DID resolver, if using a different DID Method (uPort, nacl, https etc)
-     * I would pass that specific resolver to the Resolver object.
-     */
-    const didResolver = new Resolver(ethrDidResolver)
-    
-   
-    // create the JWT directly using the didJWT library, the issuer = eth did address of a trusted party
-    didJWT.createJWT({ aud: ethrDid.did, exp: 1957463421, claims: { name: 'Joe Developer', admin: false, readMQTT: true }, name: 'Developer MTQQ Reader' },
+    //create a DID for Bob issued by the main DID
+    didJWT.createJWT({ aud: bobsDID.did, exp: 1957463421, claims: { name: 'MTQQ_Read', admin: false, readMQTT: true, somethingElse: true }, name: 'Bob\'s Claim' },
          { alg: `ES256K-R`, issuer: ethrDid.did, signer }).then(theJWT => {
             // decode it just for debug purposes
-            console.log("Unverified JWT:", didJWT.decodeJWT(theJWT))
+            console.log("Bob's Unverified JWT:", didJWT.decodeJWT(theJWT))
             // when verifying the token I need to pass the audience argument if it was specified as the 'aud' argument in the createJWT call
-            didJWT.verifyJWT(theJWT, {resolver: didResolver, audience: ethrDid.did }).then((verifiedResponse) => {
-                console.log("Verified response from verifyJWT: ", verifiedResponse)
+            didJWT.verifyJWT(theJWT, {resolver: didResolver, audience: bobsDID.did }).then((verifiedResponse) => {
+                console.log("Bob you are Verified!! ", verifiedResponse)
                 end()
                 }).catch(error => {
-                    console.log("Error verifying JWT: ", error.message)
+                    console.log("Sorry Bob, computer says No! ", error.message)
                     end(1)
                 })
             }).catch(error => {
              console.log("Error creating/verifying JWT:", error.message)
              end(1)
          })
+   
+    // create the JWT directly using the didJWT library, the issuer = eth did address of a trusted party
+    // didJWT.createJWT({ aud: ethrDid.did, exp: 1957463421, claims: { name: 'Joe Developer', admin: false, readMQTT: true }, name: 'Developer MTQQ Reader' },
+    //      { alg: `ES256K-R`, issuer: ethrDid.did, signer }).then(theJWT => {
+    //         // decode it just for debug purposes
+    //         console.log("Unverified JWT:", didJWT.decodeJWT(theJWT))
+    //         // when verifying the token I need to pass the audience argument if it was specified as the 'aud' argument in the createJWT call
+    //         didJWT.verifyJWT(theJWT, {resolver: didResolver, audience: ethrDid.did }).then((verifiedResponse) => {
+    //             console.log("Verified response from verifyJWT: ", verifiedResponse)
+    //             end()
+    //             }).catch(error => {
+    //                 console.log("Error verifying JWT: ", error.message)
+    //                 end(1)
+    //             })
+    //         }).catch(error => {
+    //          console.log("Error creating/verifying JWT:", error.message)
+    //          end(1)
+    //      })
     
 
     // resolve the DID document for the given DID identity
@@ -83,6 +109,8 @@ let createEthrDID = async () => {
         
     //    })
 }
+
+
 
 const end = (exitCode=0) => {
     process.exit(exitCode)
