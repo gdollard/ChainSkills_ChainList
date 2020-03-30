@@ -45,3 +45,6 @@ out/
 
 # Environment variables
 .env
+
+# VS code stuff
+.vscode
