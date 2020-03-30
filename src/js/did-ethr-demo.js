@@ -14,13 +14,16 @@ const EthrDID = require('ethr-did');
 const didJWT = require('did-jwt')
 const { SimpleSigner } = require('did-jwt')
 
-//Ethereum DID Registery address 
+//Ethereum DID Registery address (smart contract)
 const ethereumDIDRegistryAddress = '0xdCa7EF03e98e0DC2B855bE647C39ABe984fcF21B'
 let ethrDid
 
 let createEthrDID = async () => {
 
-    const keypairAlt = EthrDID.createKeyPair()
+    const keypairAlt = {
+        address: process.env.EthrDID_ADDRESS,
+        privateKey: process.env.EthrDID_PKEY
+    }
     // get the accounts from the Ropsten network
     const accounts =  await web3.eth.getAccounts()
     const keyPair = {
