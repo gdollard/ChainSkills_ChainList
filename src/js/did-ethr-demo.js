@@ -66,21 +66,12 @@ let createEthrDID = async () => {
             didJWT.verifyJWT(theJWT, {resolver: didResolver, audience: ethrDid.did }).then((verifiedResponse) => {
                 console.log("Verified response from verifyJWT: ", verifiedResponse)
                 end()
-                }).catch(error => {
-                    console.log("Error trying to verify JWT: ", error.message)
-                    process.exitCode = 1
-        })
-            
-         }
-         ).catch(error => {
+                })
+            }).catch(error => {
              console.log("Error creating/verifying JWT:", error.message)
              process.exitCode = 1
          })
     
-    
-
-    
-
 
     // resolve the DID document for the given DID identity
    // didResolver.resolve(ethrDid.did).then(doc => {
