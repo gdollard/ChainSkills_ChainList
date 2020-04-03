@@ -65,6 +65,8 @@ let createEthrDID = async () => {
         registry: ethereumDIDRegistryAddress
     })
 
+    //const didDocument = await didResolver.resolve(ethrDid.did)
+    //console.log("Resolved DID: ", didDocument)
     
     //create a DID for Bob issued by the main DID
     didJWT.createJWT({ aud: bobsDID.did, exp: 1957463421, claims: { name: 'MTQQ_Read', admin: false, readMQTT: true, somethingElse: true }, name: 'Bob\'s Claim' },
@@ -73,7 +75,7 @@ let createEthrDID = async () => {
             console.log("Bob's Unverified JWT:", didJWT.decodeJWT(theJWT))
             // when verifying the token I need to pass the audience argument if it was specified as the 'aud' argument in the createJWT call
             didJWT.verifyJWT(theJWT, {resolver: didResolver, audience: bobsDID.did }).then((verifiedResponse) => {
-                console.log("Bob you are Verified!! ", verifiedResponse)
+                console.log("Bob's verified JWT ", verifiedResponse)
                 end()
                 }).catch(error => {
                     console.log("Sorry Bob, computer says No! ", error.message)
@@ -101,13 +103,7 @@ let createEthrDID = async () => {
     //          console.log("Error creating/verifying JWT:", error.message)
     //          end(1)
     //      })
-    
 
-    // resolve the DID document for the given DID identity
-   // didResolver.resolve(ethrDid.did).then(doc => {
-      //  console.log("Resolved DID Document", doc)
-        
-    //    })
 }
 
 

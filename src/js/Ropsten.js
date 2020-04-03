@@ -47,7 +47,6 @@ const callVerifyOwner = async () => {
     let didReg = await DidReg.deployed();
     let idOwner = await didReg.identityOwner(ropsten_0_address);
     console.log("Owner: ", idOwner);
-
 };
 
 /**
@@ -83,10 +82,9 @@ const setupEventListener = async () => {
 
 const changeOwner = async () => {
     let didReg = await DidReg.deployed();
-    let txnReceipt = await didReg.changeOwner(ropsten_0_address, ropsten_1_address, {from: ropsten_0_address, gas: 5000000}).then((err, event) => {
-        console.log("NNNNN", event);
+    await didReg.changeOwner(ropsten_1_address, ropsten_0_address, {from: ropsten_0_address, gas: 5000000}).then((err, event) => {
+        console.log("Owner Changed: ", event);
     }).catch(error => { console.log('caught', error.message); });
-    console.log("VVVVV ", txnReceipt);
 };
 
 const listenToRegistryEvents = async () => {
