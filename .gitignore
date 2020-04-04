@@ -48,3 +48,6 @@ out/
 
 # VS code stuff
 .vscode
+
+# local stuff
+aliceContract.txt

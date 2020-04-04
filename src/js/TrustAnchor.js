@@ -10,6 +10,25 @@ truffleDIDRegistryContract.setProvider(HDwalletProvider);
 const EthrDID = require('ethr-did');
 require('ethr-did');
 const ETHEREUM_DID_REGISTRY_ADDRESS = "0xdca7ef03e98e0dc2b855be647c39abe984fcf21b";
+const Resolver = require('did-resolver').Resolver;
+const getResolver = require('ethr-did-resolver').getResolver;
+
+
+//Registering Ethr Did To Resolver
+const ethrDidResolver = getResolver({
+    web3,
+    registry: ETHEREUM_DID_REGISTRY_ADDRESS,
+});
+const didResolver = new Resolver(ethrDidResolver);
+
+/**
+ * Resolves the given EthrDID object to produce a DID document in JSON. 
+ * 
+ */
+const resolveDID = async(didObject) => {
+    const didDocument = await didResolver.resolve(didObject.did);
+    return didDocument;
+};
 
 /**
  * 
@@ -22,7 +41,7 @@ const requestDataAccess = async (accountAddress) => {
     let idOwner; 
     DidReg.methods.identityOwner(accountAddress).call().then(result => {
         if(result === accountAddress) {
-            idOwner = true;
+            // further checks needed
             return;
         }
         idOwner = false;
@@ -33,23 +52,11 @@ const requestDataAccess = async (accountAddress) => {
 }
 
 
-/**
- * Create a DID 
- */
-const createDID = () => {
-    
-    const keypair = EthrDID.createKeyPair();
 
-    ethrDid = new EthrDID({
-        ...keypair,
-        provider: web3,
-        registry: ETHEREUM_DID_REGISTRY_ADDRESS
-    });
-    return ethrDid;
-};
 
 /**
- * 
+ * Calling the identityOwner function of the registry smart contract using the Truffle 
+ * contract abstraction.
  * 
  */
 const requestDataAccessUsingTruffleContract = async (accountAddress) => {
@@ -60,5 +67,9 @@ const requestDataAccessUsingTruffleContract = async (accountAddress) => {
     console.log("Owner: ", idOwner);
 };
 
-module.exports = {createDID, requestDataAccess};
+const requestDataAccessClaim = (did) => {
+
+}
+
+module.exports = {requestDataAccessClaim, resolveDID, web3, ETHEREUM_DID_REGISTRY_ADDRESS };
 
