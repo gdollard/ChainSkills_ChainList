@@ -12,7 +12,8 @@ require('ethr-did');
 const ETHEREUM_DID_REGISTRY_ADDRESS = "0xdca7ef03e98e0dc2b855be647c39abe984fcf21b";
 const Resolver = require('did-resolver').Resolver;
 const getResolver = require('ethr-did-resolver').getResolver;
-
+const didJWT = require('did-jwt');
+const { SimpleSigner } = require('did-jwt');
 
 //Registering Ethr Did To Resolver
 const ethrDidResolver = getResolver({
@@ -29,6 +30,22 @@ const resolveDID = async(didObject) => {
     const didDocument = await didResolver.resolve(didObject.did);
     return didDocument;
 };
+
+const keyPair = {
+    address: process.env.EthrDID_ADDRESS_ANCHOR,
+    privateKey: process.env.PRIVATE_KEY_ANCHOR
+};
+
+
+
+
+
+// instantiate DID for this Anchor (technically could be multiple)
+const thisDid = new EthrDID({
+    ...keyPair,
+    provider: web3,
+    registry: ETHEREUM_DID_REGISTRY_ADDRESS
+});
 
 /**
  * 
@@ -67,9 +84,37 @@ const requestDataAccessUsingTruffleContract = async (accountAddress) => {
     console.log("Owner: ", idOwner);
 };
 
-const requestDataAccessClaim = (did) => {
+/**
+ * Called by a party who wishes to request a claim from this anchor. They pass their DID formulated ID string
+ * and if everything checks out a JWT is returned. Many assumptions are made here on the caller's ID having
+ * previously been created upon an inspection and approval process on behalf of this Trust Anchor. This function
+ * keeps it all high-level for proof of concept.
+ * 
+ * did is an EthrDID object.
+ * 
+ */
+const requestDataAccessClaim = (didObject) => {
 
-}
+    //verify if the did is owned by this ID
+    
+    // create the signer from the private key
+    const signer = SimpleSigner(keyPair.privateKey);
+    let theToken;
+    let result = didJWT.createJWT({ aud: didObject.did, exp: 1957463421, claims: { 
+        name: 'MTQQ_Read', 
+        admin: false, 
+        readMQTT: true, somethingElse: true }, 
+        name: 'Read MQTT for '+ didObject.did},
+         { alg: `ES256K-R`, 
+         issuer: thisDid.did, 
+         signer }).then((result) => {
+             return result;
+        }).catch(error => {
+             console.log("Error creating JWT for " + didObject.did + ": ", error.message);
+             process.exit(1);
+         });
+    return result;
+};
 
 module.exports = {requestDataAccessClaim, resolveDID, web3, ETHEREUM_DID_REGISTRY_ADDRESS };
 
