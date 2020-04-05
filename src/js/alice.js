@@ -21,19 +21,27 @@ const keyPair = {
     registry: ETHEREUM_DID_REGISTRY_ADDRESS
 });
 
-//const resolveMyDID() = {}
+/**
+ * Convenience method to resovle a DID for Alice.
+ */
+const resolveMyDID = () => {
+    let didDocument;
+    resolveDID(ethrDid).then((result) => {
+        didDocument = result;
+        console.log("did Doc: ", didDocument);
+    });
+};
 
-//let didDocument;
-// resolveDID(ethrDid).then((result) => {
-//     didDocument = result;
-//     console.log("did Doc: ", didDocument);
-//     process.exit(0);
-// });
 
+
+/**
+ * This basic function makes a call to the trust anchor to apply for a token.
+ * The anchor returns a Promise<string> which contains a token signed by the anchor.
+ */
 const getMyClaim = () => {
     requestDataAccessClaim(ethrDid).then((result)=> {console.log("My JWT: ", result);});
 };
 
 
-
-getMyClaim();
+//resolveMyDID();
+//getMyClaim();
