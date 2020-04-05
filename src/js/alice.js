@@ -39,9 +39,18 @@ const resolveMyDID = () => {
  * The anchor returns a Promise<string> which contains a token signed by the anchor.
  */
 const getMyClaim = () => {
-    requestDataAccessClaim(ethrDid).then((result)=> {console.log("My JWT: ", result);});
+    requestDataAccessClaim(ethrDid).then((result) => {
+        if(result === null) {
+            console.log("Something went wrong, no token issued.");
+            process.exit(1);
+        } else {
+            console.log("My JWT: ", result);
+        }
+        // just end the process for now..
+        process.exit(0);
+    });
 };
 
 
 //resolveMyDID();
-//getMyClaim();
+getMyClaim();

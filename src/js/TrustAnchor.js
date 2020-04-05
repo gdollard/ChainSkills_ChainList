@@ -95,25 +95,40 @@ const requestDataAccessUsingTruffleContract = async (accountAddress) => {
  */
 const requestDataAccessClaim = (didObject) => {
 
-    //verify if the did is owned by this ID
+    // get the DID Registry
+    let DidReg = new web3.eth.Contract(DidRegistryContract.abi, ETHEREUM_DID_REGISTRY_ADDRESS);
     
     // create the signer from the private key
     const signer = SimpleSigner(keyPair.privateKey);
-    let theToken;
-    let result = didJWT.createJWT({ aud: didObject.did, exp: 1957463421, claims: { 
-        name: 'MTQQ_Read', 
-        admin: false, 
-        readMQTT: true, somethingElse: true }, 
-        name: 'Read MQTT for '+ didObject.did},
-         { alg: `ES256K-R`, 
-         issuer: thisDid.did, 
-         signer }).then((result) => {
-             return result;
-        }).catch(error => {
-             console.log("Error creating JWT for " + didObject.did + ": ", error.message);
-             process.exit(1);
-         });
-    return result;
+    
+    
+    let theResult = DidReg.methods.identityOwner(didObject.address).call().then(result => {
+        let identity = result;
+        if(didObject.address.toUpperCase() === identity.toUpperCase()) {
+            // the owner of the identity is this address, continue
+            let result = didJWT.createJWT({ aud: didObject.did, exp: 1957463421, claims: { 
+                name: 'MTQQ_Read', 
+                admin: false, 
+                readMQTT: true, somethingElse: true }, 
+                name: 'Read MQTT for '+ didObject.did},
+                 { alg: `ES256K-R`, 
+                 issuer: thisDid.did, 
+                 signer }).then((result) => {
+                     return result;
+                }).catch(error => {
+                     console.log("Error creating JWT for " + didObject.did + ": ", error.message);
+                 });
+            // return the Promise from the create JWT call
+            return result;
+        }
+        return null;
+    }).catch(registryError => {
+        console.log("Error checking the identity owner: ", registryError);
+        return null;
+    });
+    return theResult;
+
+    
 };
 
 module.exports = {requestDataAccessClaim, resolveDID, web3, ETHEREUM_DID_REGISTRY_ADDRESS };
