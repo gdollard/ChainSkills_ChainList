@@ -1,11 +1,12 @@
 const EthrDID = require('ethr-did');
 const ETHEREUM_DID_REGISTRY_ADDRESS = require('./TrustAnchor').ETHEREUM_DID_REGISTRY_ADDRESS;
 const requestDataAccessClaim = require('./TrustAnchor').requestDataAccessClaim;
+const addClaim = require('./TrustAnchor').addClaimUsingTruffleContract;
+const getNumberOfClaimsIssued = require('./TrustAnchor').getNumberOfIssuedClaims;
 const createDID = require('./TrustAnchor').createDID;
 const web3 = require('./TrustAnchor').web3;
 const resolveDID = require('./TrustAnchor').resolveDID;
 
-const ropsten_0_address = '0xEdAA87f3a3096bc7C0CE73971b1c463f20Cf3Af5';
 
 const keyPair = {
     address: process.env.EthrDID_ADDRESS_ALICE,
@@ -51,6 +52,17 @@ const getMyClaim = () => {
     });
 };
 
+const getNumberOfClaims = () => {
+    getNumberOfClaimsIssued().then(result => {
+        console.log("Number of claims issued from Trust Anchor: ", result.toNumber());
+        process.exit(0);
+    }).catch(error => {
+        console.log("Failed to get the number of claims: ", error);
+        process.exit(1);
+    });
+};
 
+addClaim();
 //resolveMyDID();
-getMyClaim();
+//getMyClaim();
+//getNumberOfClaims();

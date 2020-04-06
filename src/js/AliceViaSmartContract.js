@@ -1,3 +1,5 @@
+// This is a testbed for developing contracts and running on a local Ganache node.
+
 var sleep = require('sleep');
 var Web3 = require('web3');
 Web3.providers.HttpProvider.prototype.sendAsync = Web3.providers.HttpProvider.prototype.send

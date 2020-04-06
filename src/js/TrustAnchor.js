@@ -6,6 +6,7 @@ const web3 = new Web3(HDwalletProvider);
 const DidRegistryContract = require('ethr-did-registry');
 const Contract = require("@truffle/contract");
 const truffleDIDRegistryContract = Contract(DidRegistryContract);
+const trustAnchorArtifact = require('../../build/contracts/TrustAnchor.json');
 truffleDIDRegistryContract.setProvider(HDwalletProvider);
 const EthrDID = require('ethr-did');
 require('ethr-did');
@@ -14,6 +15,12 @@ const Resolver = require('did-resolver').Resolver;
 const getResolver = require('ethr-did-resolver').getResolver;
 const didJWT = require('did-jwt');
 const { SimpleSigner } = require('did-jwt');
+const trustAnchorContractAddress = '0xC5baD71aB5443402155daB864C2F3fE4b01700a7';
+var truffleContract = require("@truffle/contract");
+let trustAnchorContract = truffleContract(trustAnchorArtifact);
+trustAnchorContract.setProvider(HDwalletProvider);
+const ropsten_0_address = '0xEdAA87f3a3096bc7C0CE73971b1c463f20Cf3Af5';
+const ropsten_1_address = '0xB72fD1f1cC6ecbE44270a5E235e81d768cf1BF86';
 
 //Registering Ethr Did To Resolver
 const ethrDidResolver = getResolver({
@@ -114,6 +121,11 @@ const requestDataAccessClaim = (didObject) => {
                  { alg: `ES256K-R`, 
                  issuer: thisDid.did, 
                  signer }).then((result) => {
+                     // write the claim to the ledger
+                    //  addClaimUsingTruffleContract().then(ledgerResult => {
+                    //     console.log("Claim written to the ledger, now we can return to the client:");
+                    //     return result;
+                    //  });
                      return result;
                 }).catch(error => {
                      console.log("Error creating JWT for " + didObject.did + ": ", error.message);
@@ -127,9 +139,32 @@ const requestDataAccessClaim = (didObject) => {
         return null;
     });
     return theResult;
-
-    
 };
 
-module.exports = {requestDataAccessClaim, resolveDID, web3, ETHEREUM_DID_REGISTRY_ADDRESS };
+/**
+ * This function writes the claim issue details to the ledger.
+ * The contract it calls is TrustAnchor.sol
+ */
+const addClaimUsingTruffleContract = () => {
+    trustAnchorContract.deployed().then(instance => {
+        instance.addClaim("MyTestClaim", trustAnchorContractAddress, "test Token", 12345, {from: ropsten_0_address, gas: 5000000}).then
+            (result => {console.log("Add claim result: ", result)});
+    }).catch(function (err) {
+        console.log("Promise Rejected", err)});
+};
+
+const getNumberOfIssuedClaims = async () => {
+    let trustAnchorInstance = await trustAnchorContract.deployed();
+    let numClaims = trustAnchorInstance.getNumberOfClaimsIssued().then
+        (result => {
+            console.log("Add claim result: ", result);
+            return result;
+        }).catch(error => {
+            console.log("Error occurred retrieving the number of claims: ", error);
+            return null;
+        });
+    return numClaims;    
+};
+
+module.exports = {getNumberOfIssuedClaims, addClaimUsingTruffleContract, requestDataAccessClaim, resolveDID, web3, ETHEREUM_DID_REGISTRY_ADDRESS };
 
