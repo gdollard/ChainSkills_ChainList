@@ -1,3 +1,4 @@
+var sleep = require('sleep');
 var Web3 = require('web3');
 Web3.providers.HttpProvider.prototype.sendAsync = Web3.providers.HttpProvider.prototype.send
 var ganacheProvider = new Web3.providers.HttpProvider("http://localhost:7545");
@@ -60,7 +61,7 @@ const callGetGreetingsUsingWeb3 = () => {
 }
 
 /**
- * Calling a function that creates a transaction doesn't seem to work using this method.
+ * Doesn't work
  */
 const addClaim = () => {
     var fs = require('fs');
@@ -98,11 +99,50 @@ const addClaimUsingTruffleContract = () => {
             (result => {console.log("Add claim result: ", result)});
     }).then((txnID) => {}).catch(function (err) {
         console.log("Promise Rejected", err)});
-}
+};
 
-//callGetGreetingUsingTruffleContract();
-//callGetGreetingEthJS();
-//callGetGreetingsUsingWeb3();
+/**
+ * Not working
+ */
+const listenToEventsUsingTruffleContract = () => {
+    trustAnchorContract.deployed().then(instance => {
+        instance
+                .ClaimIssued()
+                .on("data", event => {
+                    console.log("Caught event: ", event);
+                })
+                .on("error", error => {
+                    console.error("Oops, something went wrong when adding a claim: ", error);
+                });
+    });  
+};
+
+/**
+ * Doesn't work!
+ */
+const listenToAddClaimEventUsingWeb3 = () => {
+    var fs = require('fs');
+    var jsonFile = "./build/contracts/TrustAnchor.json";
+    var parsed= JSON.parse(fs.readFileSync(jsonFile));
+    var abi = parsed.abi;
+
+    var trustAnchorContract= new web3.eth.Contract(abi, trustAnchorContractAddress);
+    trustAnchorContract.events.ClaimIssued((error, event) => {
+        console.log("Event back from claim added: ", event);
+    }).on('data', function(event){
+        console.log("Event triggered...",event); 
+    }).on("connected", function(subscriptionId){
+        console.log("Subscribed to addClaim event:", subscriptionId);
+    }).on('changed', function(event){
+        console.log("Changed...", event);
+    });
+};
+
+// register listeners
+//listenToAddClaimEventUsingWeb3();
+listenToEventsUsingTruffleContract();
+//sleep.sleep(2);
+
 
 // functions not working for some reason which I have no time to investigate!
 //addClaim();
@@ -110,6 +150,10 @@ const addClaimUsingTruffleContract = () => {
 
 // ** working functions ***
 //addClaimUsingEthJS();
-//addClaimUsingTruffleContract();
+addClaimUsingTruffleContract();
 
 //getNumberOfIssuedClaims();
+
+//callGetGreetingUsingTruffleContract();
+//callGetGreetingEthJS();
+//callGetGreetingsUsingWeb3();
