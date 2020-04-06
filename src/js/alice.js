@@ -1,7 +1,6 @@
 const EthrDID = require('ethr-did');
 const ETHEREUM_DID_REGISTRY_ADDRESS = require('./TrustAnchor').ETHEREUM_DID_REGISTRY_ADDRESS;
 const requestDataAccessClaim = require('./TrustAnchor').requestDataAccessClaim;
-const addClaim = require('./TrustAnchor').addClaimUsingTruffleContract;
 const getNumberOfClaimsIssued = require('./TrustAnchor').getNumberOfIssuedClaims;
 const createDID = require('./TrustAnchor').createDID;
 const web3 = require('./TrustAnchor').web3;
@@ -43,12 +42,12 @@ const getMyClaim = () => {
     requestDataAccessClaim(ethrDid).then((result) => {
         if(result === null) {
             console.log("Something went wrong, no token issued.");
-            process.exit(1);
+            //process.exit(1);
         } else {
             console.log("My JWT: ", result);
         }
         // just end the process for now..
-        process.exit(0);
+        //process.exit(0);
     });
 };
 
@@ -62,7 +61,7 @@ const getNumberOfClaims = () => {
     });
 };
 
-addClaim();
 //resolveMyDID();
-//getMyClaim();
+
+getMyClaim();
 //getNumberOfClaims();

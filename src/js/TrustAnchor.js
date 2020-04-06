@@ -121,13 +121,16 @@ const requestDataAccessClaim = (didObject) => {
                  { alg: `ES256K-R`, 
                  issuer: thisDid.did, 
                  signer }).then((result) => {
+                     console.log("JWT created, now writing to the ledger first before returning to the caller.");
                      // write the claim to the ledger
-                    //  addClaimUsingTruffleContract().then(ledgerResult => {
-                    //     console.log("Claim written to the ledger, now we can return to the client:");
-                    //     return result;
-                    //  });
-                     return result;
-                }).catch(error => {
+                     let claimResult = addClaimUsingTruffleContract().then(claim => {
+                            console.log("add claim returned so will return the JWT..", claim);
+                            return result;
+                        }).catch(error => {
+                            console.log("Failed to add the claim to the smart contract");
+                        });
+                        return result; 
+                    }).catch(error => {
                      console.log("Error creating JWT for " + didObject.did + ": ", error.message);
                  });
             // return the Promise from the create JWT call
@@ -145,19 +148,21 @@ const requestDataAccessClaim = (didObject) => {
  * This function writes the claim issue details to the ledger.
  * The contract it calls is TrustAnchor.sol
  */
-const addClaimUsingTruffleContract = () => {
-    trustAnchorContract.deployed().then(instance => {
+const addClaimUsingTruffleContract = async () => {
+    let result = trustAnchorContract.deployed().then(instance => {
         instance.addClaim("MyTestClaim", trustAnchorContractAddress, "test Token", 12345, {from: ropsten_0_address, gas: 5000000}).then
             (result => {console.log("Add claim result: ", result)});
+            return result;
     }).catch(function (err) {
         console.log("Promise Rejected", err)});
+    return result;
+
 };
 
 const getNumberOfIssuedClaims = async () => {
     let trustAnchorInstance = await trustAnchorContract.deployed();
     let numClaims = trustAnchorInstance.getNumberOfClaimsIssued().then
         (result => {
-            console.log("Add claim result: ", result);
             return result;
         }).catch(error => {
             console.log("Error occurred retrieving the number of claims: ", error);
