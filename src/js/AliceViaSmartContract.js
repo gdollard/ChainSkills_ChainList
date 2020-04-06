@@ -49,9 +49,31 @@ const callGetGreetingsUsingWeb3 = () => {
 }
 
 const addClaim = () => {
+    var fs = require('fs');
+    var jsonFile = "./build/contracts/TrustAnchor.json";
+    var parsed= JSON.parse(fs.readFileSync(jsonFile));
+    var abi = parsed.abi;
 
+    var trustAnchorContract= new web3.eth.Contract(abi, trustAnchorContractAddress);
+    trustAnchorContract.methods.addClaim("MyTestClaim", trustAnchorContractAddress, "test Token", 12345).call().
+        then(result => {
+            console.log("Result addClaim:", result);
+        });
+};
+
+const getNumberOfIssuedClaims = () => {
+    var fs = require('fs');
+    var jsonFile = "./build/contracts/TrustAnchor.json";
+    var parsed= JSON.parse(fs.readFileSync(jsonFile));
+    var abi = parsed.abi;
+
+    var trustAnchorContract= new web3.eth.Contract(abi, trustAnchorContractAddress);
+    trustAnchorContract.methods.getNumberOfClaimsIssued().call().
+        then(result => {console.log("Number of claims issued:", result);});
 };
 
 //callGetGreetingUsingTruffleContract();
 //callGetGreetingEthJS();
 //callGetGreetingsUsingWeb3();
+addClaim();
+//getNumberOfIssuedClaims();
