@@ -16,6 +16,9 @@ const trustAnchorContractAddress = '0x90A535a0A4Ed1CB7b07aBB5b1EcDaC4BC9704ccC';
 const TrustAnchorContract = new EthContract(eth)(trustAnchorArtifact.abi);
 const trustAnchorContractInstance = TrustAnchorContract.at(trustAnchorContractAddress);
 
+// local dev account
+const ganache_account_0 = '0x207526Be94a4F1DB646a8291Fe0A99327B2338a8';
+
 /**
  * Call the contract using the Truffle Contract abstraction.
  */
@@ -35,6 +38,14 @@ const callGetGreetingEthJS = () => {
     
 }
 
+const addClaimUsingEthJS = () => {
+    trustAnchorContractInstance.addClaim("MyTestClaim", trustAnchorContractAddress, "test Token", 12345, {from: ganache_account_0, gas: 5000000})
+    .then(result => {
+        console.log("addClaimUsingEthJS", result);
+    });
+    
+}
+
 /**
  * And here's another way to skin a cat, this time using web3.eth.Contract
  */
@@ -48,6 +59,9 @@ const callGetGreetingsUsingWeb3 = () => {
     trustAnchorContract.methods.getMessage().call().then(result => {console.log("Result from contract:", result);});
 }
 
+/**
+ * Calling a function that creates a transaction doesn't seem to work using this method.
+ */
 const addClaim = () => {
     var fs = require('fs');
     var jsonFile = "./build/contracts/TrustAnchor.json";
@@ -61,6 +75,9 @@ const addClaim = () => {
         });
 };
 
+/**
+ * Works!
+ */
 const getNumberOfIssuedClaims = () => {
     var fs = require('fs');
     var jsonFile = "./build/contracts/TrustAnchor.json";
@@ -72,8 +89,27 @@ const getNumberOfIssuedClaims = () => {
         then(result => {console.log("Number of claims issued:", result);});
 };
 
+/**
+ * Adding a claim: this function works!
+ */
+const addClaimUsingTruffleContract = () => {
+    trustAnchorContract.deployed().then(instance => {
+        instance.addClaim("MyTestClaim", trustAnchorContractAddress, "test Token", 12345, {from: ganache_account_0, gas: 5000000}).then
+            (result => {console.log("Add claim result: ", result)});
+    }).then((txnID) => {}).catch(function (err) {
+        console.log("Promise Rejected", err)});
+}
+
 //callGetGreetingUsingTruffleContract();
 //callGetGreetingEthJS();
 //callGetGreetingsUsingWeb3();
-addClaim();
+
+// functions not working for some reason which I have no time to investigate!
+//addClaim();
+
+
+// ** working functions ***
+//addClaimUsingEthJS();
+//addClaimUsingTruffleContract();
+
 //getNumberOfIssuedClaims();

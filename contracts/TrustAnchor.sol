@@ -17,6 +17,7 @@ contract TrustAnchor {
         string claim_name;
         string token_string;
         uint256 expiry;
+        address payable seller;
     }
 
      event ClaimIssued (
@@ -35,7 +36,8 @@ contract TrustAnchor {
             ethereum_address,
             claimName,
             token,
-            expiry
+            expiry,
+            msg.sender
         );
 
         // Trigger even for any listeners
