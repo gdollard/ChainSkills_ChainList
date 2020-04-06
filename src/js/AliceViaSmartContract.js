@@ -12,9 +12,9 @@ trustAnchorContract.setProvider(ganacheProvider);
 const Eth = require('ethjs-query');
 const EthContract = require('ethjs-contract');
 const eth = new Eth(ganacheProvider);
-const registryAddress = '0xaA725754A9f228E38F7eF946746662BB321d7FB9';
+const trustAnchorContractAddress = '0x90A535a0A4Ed1CB7b07aBB5b1EcDaC4BC9704ccC';
 const TrustAnchorContract = new EthContract(eth)(trustAnchorArtifact.abi);
-const trustAnchorContractInstance = TrustAnchorContract.at(registryAddress);
+const trustAnchorContractInstance = TrustAnchorContract.at(trustAnchorContractAddress);
 
 /**
  * Call the contract using the Truffle Contract abstraction.
@@ -44,10 +44,14 @@ const callGetGreetingsUsingWeb3 = () => {
     var parsed= JSON.parse(fs.readFileSync(jsonFile));
     var abi = parsed.abi;
 
-    var YourContract= new web3.eth.Contract(abi, registryAddress);
-    YourContract.methods.getMessage().call().then(result => {console.log("HHHH", result);});
+    var trustAnchorContract= new web3.eth.Contract(abi, trustAnchorContractAddress);
+    trustAnchorContract.methods.getMessage().call().then(result => {console.log("Result from contract:", result);});
 }
+
+const addClaim = () => {
+
+};
 
 //callGetGreetingUsingTruffleContract();
 //callGetGreetingEthJS();
-callGetGreetingsUsingWeb3();
+//callGetGreetingsUsingWeb3();
