@@ -121,22 +121,23 @@ const requestDataAccessClaim = (didObject) => {
                  { alg: `ES256K-R`, 
                  issuer: thisDid.did, 
                  signer }).then((result) => {
-                     console.log("JWT created, now writing to the ledger first before returning to the caller.");
+                     console.log("JWT created, now writing to the ledger first before returning to the caller.", result);
                      // write the claim to the ledger
-                     let claimResult = addClaimUsingTruffleContract().then(claim => {
-                            console.log("add claim returned so will return the JWT..", claim);
-                            return result;
-                        }).catch(error => {
-                            console.log("Failed to add the claim to the smart contract");
-                        });
+                    //  let claimResult = addClaimUsingTruffleContract().then(claim => {
+                    //         console.log("add claim returned so will return the JWT..", claim);
+                    //         return result;
+                    //     }).catch(error => {
+                    //         console.log("Failed to add the claim to the smart contract");
+                    //     });
+                        // return the result of the JWT promise
                         return result; 
                     }).catch(error => {
                      console.log("Error creating JWT for " + didObject.did + ": ", error.message);
+                     return null;
                  });
             // return the Promise from the create JWT call
             return result;
         }
-        return null;
     }).catch(registryError => {
         console.log("Error checking the identity owner: ", registryError);
         return null;
