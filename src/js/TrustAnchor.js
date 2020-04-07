@@ -83,13 +83,26 @@ const requestDataAccessClaim = async (didObject) => {
             name: 'Read MQTT for '+ didObject.did},
              { alg: `ES256K-R`, 
              issuer: thisDid.did, 
-             signer });
-        console.log("Do we have a token?", theToken);
+              signer }).catch(error => {
+                 console.log("Error when creating Token: ", error.message);
+                 return null;
+             });
+        if(theToken == null){
+            return theToken;
+        }
 
         // next add the claim
-        let theClaimTxnReceipt = await addClaimUsingTruffleContract();
-        console.log("Do we have a txn? ", theClaimTxnReceipt);
-        return theToken;
+        let theClaimTxnReceipt = await addClaimUsingTruffleContract().catch(error => {
+            console.log("Failed to write the claim to the ledger: ", error);
+            return null;
+        });
+        
+        if(theClaimTxnReceipt) {
+            return theToken;
+        }
+        else {
+            return null;
+        }
     }
 };
 
