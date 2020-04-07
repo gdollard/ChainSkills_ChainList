@@ -51,6 +51,7 @@ const getMyClaim = () => {
     });
 };
 
+
 const getNumberOfClaims = () => {
     getNumberOfClaimsIssued().then(result => {
         console.log("Number of claims issued from Trust Anchor: ", result.toNumber());
@@ -63,5 +64,5 @@ const getNumberOfClaims = () => {
 
 //resolveMyDID();
 
-getMyClaim();
-//getNumberOfClaims();
+//getMyClaim();
+getNumberOfClaims();

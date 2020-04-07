@@ -19,8 +19,6 @@ const trustAnchorContractAddress = '0xC5baD71aB5443402155daB864C2F3fE4b01700a7';
 var truffleContract = require("@truffle/contract");
 let trustAnchorContract = truffleContract(trustAnchorArtifact);
 trustAnchorContract.setProvider(HDwalletProvider);
-const ropsten_0_address = '0xEdAA87f3a3096bc7C0CE73971b1c463f20Cf3Af5';
-const ropsten_1_address = '0xB72fD1f1cC6ecbE44270a5E235e81d768cf1BF86';
 
 //Registering Ethr Did To Resolver
 const ethrDidResolver = getResolver({
@@ -43,39 +41,12 @@ const keyPair = {
     privateKey: process.env.PRIVATE_KEY_ANCHOR
 };
 
-
-
-
-
 // instantiate DID for this Anchor (technically could be multiple)
 const thisDid = new EthrDID({
     ...keyPair,
     provider: web3,
     registry: ETHEREUM_DID_REGISTRY_ADDRESS
 });
-
-/**
- * 
- * 
- */
-const requestDataAccess = async (accountAddress) => {
-
-    //verify the owner of the identity by calling the Ethereum registry contract using web3
-    let DidReg = new web3.eth.Contract(DidRegistryContract.abi, ETHEREUM_DID_REGISTRY_ADDRESS);
-    let idOwner; 
-    DidReg.methods.identityOwner(accountAddress).call().then(result => {
-        if(result === accountAddress) {
-            // further checks needed
-            return;
-        }
-        idOwner = false;
-        return;
-    })
-    
-    return idOwner;
-}
-
-
 
 
 /**
@@ -88,7 +59,7 @@ const requestDataAccessUsingTruffleContract = async (accountAddress) => {
     //verify the owner of the identity by calling the Ethereum registry contract using web3
     let contractInstance = await truffleDIDRegistryContract.deployed();
     let idOwner = await contractInstance.identityOwner(accountAddress);
-    console.log("Owner: ", idOwner);
+    return idOwner;
 };
 
 /**
@@ -100,64 +71,41 @@ const requestDataAccessUsingTruffleContract = async (accountAddress) => {
  * did is an EthrDID object.
  * 
  */
-const requestDataAccessClaim = (didObject) => {
-
-    // get the DID Registry
-    let DidReg = new web3.eth.Contract(DidRegistryContract.abi, ETHEREUM_DID_REGISTRY_ADDRESS);
-    
-    // create the signer from the private key
+const requestDataAccessClaim = async (didObject) => {
     const signer = SimpleSigner(keyPair.privateKey);
-    
-    
-    let theResult = DidReg.methods.identityOwner(didObject.address).call().then(result => {
-        let identity = result;
-        if(didObject.address.toUpperCase() === identity.toUpperCase()) {
-            // the owner of the identity is this address, continue
-            let result = didJWT.createJWT({ aud: didObject.did, exp: 1957463421, claims: { 
-                name: 'MTQQ_Read', 
-                admin: false, 
-                readMQTT: true, somethingElse: true }, 
-                name: 'Read MQTT for '+ didObject.did},
-                 { alg: `ES256K-R`, 
-                 issuer: thisDid.did, 
-                 signer }).then((result) => {
-                     console.log("JWT created, now writing to the ledger first before returning to the caller.", result);
-                     // write the claim to the ledger
-                    //  let claimResult = addClaimUsingTruffleContract().then(claim => {
-                    //         console.log("add claim returned so will return the JWT..", claim);
-                    //         return result;
-                    //     }).catch(error => {
-                    //         console.log("Failed to add the claim to the smart contract");
-                    //     });
-                        // return the result of the JWT promise
-                        return result; 
-                    }).catch(error => {
-                     console.log("Error creating JWT for " + didObject.did + ": ", error.message);
-                     return null;
-                 });
-            // return the Promise from the create JWT call
-            return result;
-        }
-    }).catch(registryError => {
-        console.log("Error checking the identity owner: ", registryError);
-        return null;
-    });
-    return theResult;
+    let idOwner = await requestDataAccessUsingTruffleContract(didObject.address);
+
+    if(didObject.address.toUpperCase() === idOwner.toUpperCase()) {
+        let theToken = await didJWT.createJWT({ aud: didObject.did, exp: 1957463421, claims: { 
+            name: 'MTQQ_Read', 
+            admin: false, 
+            readMQTT: true, somethingElse: true }, 
+            name: 'Read MQTT for '+ didObject.did},
+             { alg: `ES256K-R`, 
+             issuer: thisDid.did, 
+             signer });
+        console.log("Do we have a token?", theToken);
+
+        // next add the claim
+        let theClaimTxnReceipt = await addClaimUsingTruffleContract();
+        console.log("Do we have a txn? ", theClaimTxnReceipt);
+        return theToken;
+    }
 };
 
 /**
  * This function writes the claim issue details to the ledger.
  * The contract it calls is TrustAnchor.sol
  */
-const addClaimUsingTruffleContract = async () => {
-    let result = trustAnchorContract.deployed().then(instance => {
-        instance.addClaim("MyTestClaim", trustAnchorContractAddress, "test Token", 12345, {from: ropsten_0_address, gas: 5000000}).then
-            (result => {console.log("Add claim result: ", result)});
-            return result;
-    }).catch(function (err) {
+const addClaimUsingTruffleContract = async() => {
+    const ropsten_0_address = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;
+    let trustAnchorInstance = await trustAnchorContract.deployed();
+    let claimResult = trustAnchorInstance.addClaim("MyTestClaim", trustAnchorContractAddress, "test Token", 12345, {from: ropsten_0_address, gas: 5000000}).then
+            (result => {
+                return result;
+        }).catch(function (err) {
         console.log("Promise Rejected", err)});
-    return result;
-
+    return claimResult;
 };
 
 const getNumberOfIssuedClaims = async () => {
