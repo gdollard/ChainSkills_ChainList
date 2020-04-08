@@ -72,12 +72,13 @@ const requestDataAccessUsingTruffleContract = async (accountAddress) => {
  * 
  */
 const requestDataAccessClaim = async (didObject) => {
+    const claimName = 'MQTT_AccessClaim';
     const signer = SimpleSigner(keyPair.privateKey);
     let idOwner = await requestDataAccessUsingTruffleContract(didObject.address);
-
+    let expiry = 1957463421;
     if(didObject.address.toUpperCase() === idOwner.toUpperCase()) {
-        let theToken = await didJWT.createJWT({ aud: didObject.did, exp: 1957463421, claims: { 
-            name: 'MTQQ_Read', 
+        let theToken = await didJWT.createJWT({ aud: didObject.did, exp: expiry, claims: { 
+            name: claimName, 
             admin: false, 
             readMQTT: true, somethingElse: true }, 
             name: 'Read MQTT for '+ didObject.did},
@@ -92,12 +93,13 @@ const requestDataAccessClaim = async (didObject) => {
         }
 
         // next add the claim
-        let theClaimTxnReceipt = await addClaimUsingTruffleContract().catch(error => {
+        let theClaimTxnReceipt = await addClaimUsingTruffleContract(claimName, didObject.address, theToken, expiry).catch(error => {
             console.log("Failed to write the claim to the ledger: ", error);
             return null;
         });
         
         if(theClaimTxnReceipt) {
+            console.log("Receipt:", theClaimTxnReceipt);
             return theToken;
         }
         else {
@@ -133,5 +135,5 @@ const getNumberOfIssuedClaims = async () => {
     return numClaims;    
 };
 
-module.exports = {getNumberOfIssuedClaims, addClaimUsingTruffleContract, requestDataAccessClaim, resolveDID, web3, ETHEREUM_DID_REGISTRY_ADDRESS };
+module.exports = {getNumberOfIssuedClaims, requestDataAccessClaim, resolveDID, web3, ETHEREUM_DID_REGISTRY_ADDRESS };
 

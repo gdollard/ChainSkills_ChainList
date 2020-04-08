@@ -64,5 +64,5 @@ const getNumberOfClaims = () => {
 
 //resolveMyDID();
 
-//getMyClaim();
-getNumberOfClaims();
+getMyClaim();
+//getNumberOfClaims();
