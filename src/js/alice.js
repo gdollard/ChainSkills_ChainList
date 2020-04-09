@@ -3,7 +3,6 @@ const ETHEREUM_DID_REGISTRY_ADDRESS = require('./TrustAnchor').ETHEREUM_DID_REGI
 const requestDataAccessClaim = require('./TrustAnchor').requestDataAccessClaim;
 const getNumberOfClaimsIssued = require('./TrustAnchor').getNumberOfIssuedClaims;
 const authDataAccess = require('./ServiceProvider').authoriseDataAccessClaim;
-const createDID = require('./TrustAnchor').createDID;
 const web3 = require('./TrustAnchor').web3;
 const resolveDID = require('./TrustAnchor').resolveDID;
 
