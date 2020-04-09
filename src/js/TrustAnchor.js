@@ -92,40 +92,28 @@ const requestDataAccessClaim = async (didObject) => {
             return theToken;
         }
 
-        //delete me
-        return theToken;
         
         // next add the claim
-        // let theClaimTxnReceipt = await addClaimUsingTruffleContract(claimName, didObject.address, theToken, expiry).catch(error => {
-        //     console.log("Failed to write the claim to the ledger: ", error);
-        //     return null;
-        // });
+        let theClaimTxnReceipt = await writeClaimToLedger(claimName, didObject.address, theToken, expiry).catch(error => {
+            console.log("Failed to write the claim to the ledger: ", error);
+            return null;
+        });
         
-        // if(theClaimTxnReceipt) {
-        //     console.log("Receipt:", theClaimTxnReceipt);
-        //     return theToken;
-        // }
-        // else {
-        //     return null;
-        // }
+        if(theClaimTxnReceipt) {
+            return theToken;
+        }
+        else {
+            return null;
+        }
     }
 };
 
-// const authoriseDataAccessClaim = async (jwt, didObject) => {
-//     let result = didJWT.verifyJWT(jwt, {resolver: didResolver, audience: didObject.did }).then((verifiedResponse) => {
-//         console.log("Alice's verified JWT ", verifiedResponse);
-//         return verifiedResponse;
-//         }).catch(error => {
-//             console.log("Sorry Alice, computer says No! ", error.message);
-//         });
-//     return result;
-//  };
 
 /**
  * This function writes the claim issue details to the ledger.
  * The contract it calls is TrustAnchor.sol
  */
-const addClaimUsingTruffleContract = async() => {
+const writeClaimToLedger = async() => {
     const ropsten_0_address = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;
     let trustAnchorInstance = await trustAnchorContract.deployed();
     let claimResult = trustAnchorInstance.addClaim("MyTestClaim", trustAnchorContractAddress, "test Token", 12345, {from: ropsten_0_address, gas: 5000000}).then
