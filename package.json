@@ -26,6 +26,7 @@
     "ethjs-provider-http": "^0.1.6",
     "ethr-did": "^1.1.0",
     "ethr-did-resolver": "^2.2.0",
+    "mqtt": "^3.0.0",
     "sleep": "^6.1.0",
     "truffle-hdwallet-provider": "^1.0.17",
     "web3": "1.2.6",
