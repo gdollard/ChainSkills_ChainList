@@ -71,7 +71,7 @@ client.on('connect', function () {
 // specify a callback when a message is published
 client.on('message', function (topic, message) {
     // message is Buffer
-    console.log("Received a message: %s, next up write this to the ledger is authorised.", message.toString());
+    console.log("Received a message: %s, next up write this to the ledger if authorised.", message.toString());
     
     broadcastToLedger(message.toString(), "MosquittoBroker_CK_IE_0");
     client.end();
@@ -89,6 +89,7 @@ const broadcastToLedger = async(message, broker_id) => {
     let contractInstance = await messageBroadcasterContract.deployed();
     let claimResult = contractInstance.logMessage(message, broker_id, {from: accountNumber, gas: 5000000} ).then
             (result => {
+                console.log("result from txn: ", result);
                 return result;
         }).catch(function (err) {
         console.log("Promise Rejected", err)});
