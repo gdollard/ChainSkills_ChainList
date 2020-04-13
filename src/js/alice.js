@@ -66,8 +66,16 @@ const getNumberOfClaims = () => {
     });
 };
 
+
+/**
+ * Sample function to request for data to the service provider using Alice's claim.
+ */
+const getSensorData = () => {
+
+};
+
 //resolveMyDID();
 //getMyClaim();
-getNumberOfClaims();
+//getNumberOfClaims();
 
 

@@ -42,4 +42,48 @@ const authoriseDataAccessClaim = async (jwt, didObject) => {
     return result;
  };
 
+
+ /**
+  * Is responsible taking the chunk of IOT data, encrypt it and invoke the smart contract to persist the data onto an IPFS node. 
+  * It will then ensure the transaction is recorded in the ledger for future requests.
+  * 
+  * This will be called by the MQTT nodes to publish their data to the ledger.
+  * 
+  * @param {string} jwt 
+  * @param {EthrDID} didObject 
+  *  @param {Buffer} iotData 
+  */
+const processIOTData = async (jwt, didObject, iotData) => {
+
+    // verify the JWT and the didObject
+
+    // encrypt the data using the private key of this provider
+
+    // add the encrypted chunk to IPFS
+
+    // write the TXN with the txnHash of the IPFS call to the ledger
+};
+
+
+/**
+ * Alice will call this to retrieve IOT data. The Service Provider will verify Alice's credentials and if she is authorised the
+ * data is retrieved from IPFS using the txn hash from the ledger. The data will be encrypted at this point but the provider
+ * will decrypt it for Alice and will return it to her in a Buffer or some other compatible form.
+ * 
+ * @param {string} jwt 
+ * @param {EthrDID} didObject 
+ */
+const requestIOTData = async (jwt, didObject) => {
+    
+    // verify jwt and didObject
+
+    // somehow find a way to identify the chunk of data that is required
+
+    // call the smart contract to look up the txn hash. 
+
+    // use IPFS api to grab it
+
+    // decrypt it and send it to Alice
+};
+
  module.exports = {authoriseDataAccessClaim};
