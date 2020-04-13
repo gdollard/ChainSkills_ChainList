@@ -73,8 +73,8 @@ client.on('message', function (topic, message) {
     // message is Buffer
     console.log("Received a message: %s on topic %s, next up write this to the ledger if authorised.", message.toString(), topic);
     
-    broadcastToLedger(topic, message.toString(), "MosquittoBroker_CK_IE_0");
-    client.end();
+    //broadcastToLedger(topic, message.toString(), "MosquittoBroker_CK_IE_0");
+    //client.end();
   });
 
 
@@ -103,4 +103,4 @@ const getTotalNumberOfMessagesLogged = async () => {
   console.log("Number of messages logged: ", claimResult.toNumber());
 };
 
-getTotalNumberOfMessagesLogged();
+//getTotalNumberOfMessagesLogged();

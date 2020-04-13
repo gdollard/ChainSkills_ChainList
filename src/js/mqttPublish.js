@@ -12,7 +12,23 @@ const mqtt_options = {
   
 var client  = mqtt.connect('mqtt://localhost:1883', mqtt_options);
 
+
+const publishMessages = async () => {
+  
+  console.log("CONNECTED TO BROKER, publishing now...");
+
+    while(true) {
+      await sleep(2000)
+      console.log("Publish...");
+      client.publish('TestTopic', 'Hello there on TestTopic');
+    }
+};
+
 client.on('connect', function () {
-    console.log("CONNECTED TO BROKER, publishing now...");
-    client.publish('TestTopic', 'Hello there on TestTopic');
+  publishMessages();
 });
+
+// sleep time expects milliseconds
+const sleep = (time) => {
+  return new Promise((resolve) => setTimeout(resolve, time));
+};
