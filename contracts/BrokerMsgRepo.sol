@@ -8,10 +8,16 @@ contract BrokerMessageRepo {
 
     address public owner = msg.sender;
     // A topic can have multiple messages
-    mapping(string => Message[]) public messages;
     uint topicCounter;
+    Topic[] topics;
 
-    // Custom types for the claim
+    // Custom types Messages
+    struct Topic { 
+      mapping(uint => Message) messages;
+      uint messageCount;
+      string topic;
+    }
+
     struct Message {
         uint id;
         string message;
@@ -22,8 +28,41 @@ contract BrokerMessageRepo {
     event MessageLogged (
         string message,
         string brokerID,
+        string topic,
         address indexed sourceAccount
      );
+
+    function isEqualTo(string memory stringA, string memory stringB ) public pure returns(bool) {
+        return (keccak256(abi.encode(stringA)) == keccak256(abi.encode(stringB)));
+    }
+
+    // function addTopic(string memory _topic) public {
+    //     topics.push(Topic({messageCount: 0, topic: _topic}));
+    // }
+
+    function addMessage(string memory _topic, string memory _message, string memory _broker) public {
+        // Check if the topic exists already
+        // Topic memory foundTopic = Topic({messageCount: 0, topic: _topic});
+        
+        bool found = false;
+        for(uint i = 0; i < topics.length; i++) {
+            if(isEqualTo(topics[i].topic, _topic)) {
+                topics[i].messages[topics[i].messageCount] = Message(topics[i].messageCount, _message, _broker, msg.sender);
+                topics[i].messageCount++;
+                break;
+            }
+        }
+        if(!found) {
+            topicCounter++;
+            //mapping(uint => Message) storage myMessages;
+            //myMessages[0] = _message;
+            Topic memory newTopic = Topic({messageCount: 0, topic: _topic});
+            topics[topicCounter] = newTopic;
+            topics[topicCounter].messages[0] = Message(0, _message, _broker, msg.sender);
+        }
+
+        emit MessageLogged(_message, _broker, _topic, msg.sender);
+    }
 
     // Modifiers
     modifier onlyOwner(address _owner) {
@@ -34,29 +73,13 @@ contract BrokerMessageRepo {
     /**
      * Get num of messages for a given topic.
      */
-    function getNumberOfMessagesFromTopic(string memory topic) public view returns (uint) {
-        return messages[topic].length;
+    function getNumberOfMessagesFromTopic(string memory _topic) public view returns (uint) {
+        for(uint i = 0; i < topics.length; i++) {
+            if(isEqualTo(topics[i].topic, _topic)) {
+                return topics[i].messageCount-1;
+            }
+        }
+        return 0;
     }
 
-    function logMessage(string memory topic, string memory messageValue, string memory broker_id ) public onlyOwner(owner) {
-        // check if the topic already exists
-        if(messages[topic].length > 0) {
-            //get the message map for this topic and add the new message
-            uint msgCount = messages[topic].length;
-            Message memory newMessage = Message(
-            msgCount,
-            messageValue,
-            broker_id,
-            msg.sender);
-            messages[topic].push(newMessage);
-        } else {
-            // add first first for a new topic
-            Message[] memory newMessages;
-            messages[topic] = newMessages;
-            Message memory newMessage = Message(0, messageValue, broker_id, msg.sender);
-            newMessages[0] = newMessage;
-            //messages[topic] = newMessages; //https://stackoverflow.com/questions/49345903/copying-of-type-struct-memory-memory-to-storage-not-yet-supported/49350916
-        }
-        emit MessageLogged(messageValue, broker_id, msg.sender);
-    }
 }
