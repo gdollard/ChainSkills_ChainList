@@ -71,9 +71,9 @@ client.on('connect', function () {
 // specify a callback when a message is published
 client.on('message', function (topic, message) {
     // message is Buffer
-    console.log("Received a message: %s, next up write this to the ledger if authorised.", message.toString());
+    console.log("Received a message: %s on topic %s, next up write this to the ledger if authorised.", message.toString(), topic);
     
-    broadcastToLedger(message.toString(), "MosquittoBroker_CK_IE_0");
+    broadcastToLedger(topic, message.toString(), "MosquittoBroker_CK_IE_0");
     client.end();
   });
 
@@ -83,11 +83,11 @@ client.on('message', function (topic, message) {
  * a message from the local broker.
  * Takes a message: string
  */
-const broadcastToLedger = async(message, broker_id) => {
+const broadcastToLedger = async(topic, message, broker_id) => {
     //const ropsten_0_address = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;
     const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
     let contractInstance = await messageBroadcasterContract.deployed();
-    let claimResult = contractInstance.logMessage(message, broker_id, {from: accountNumber, gas: 5000000} ).then
+    let claimResult = contractInstance.addMessage(topic, message, broker_id, {from: accountNumber, gas: 5000000} ).then
             (result => {
                 console.log("result from txn: ", result);
                 return result;
@@ -95,3 +95,12 @@ const broadcastToLedger = async(message, broker_id) => {
         console.log("Promise Rejected", err)});
     return claimResult;
 };
+
+const getTotalNumberOfMessagesLogged = async () => {
+  const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
+  let contractInstance = await messageBroadcasterContract.deployed();
+  let claimResult = await contractInstance.getTotalNumberOfMessages();
+  console.log("Number of messages logged: ", claimResult.toNumber());
+};
+
+getTotalNumberOfMessagesLogged();
