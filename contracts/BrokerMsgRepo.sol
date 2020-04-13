@@ -7,18 +7,18 @@ pragma solidity >0.4.99 <0.6.0;
 contract BrokerMessageRepo {
 
     address public owner = msg.sender;
-    // a map of massages, might be changed to hashes
-    mapping(uint => Message) public messages;
-    uint messageCounter;
+    // A topic can have multiple messages
+    mapping(string => Message[]) public messages;
+    uint topicCounter;
 
     // Custom types for the claim
     struct Message {
         uint id;
-        string message_value;
-        string broker_id;
+        string message;
+        string broker_name;
         address submitter;
     }
-
+    
     event MessageLogged (
         string message,
         string brokerID,
@@ -26,22 +26,37 @@ contract BrokerMessageRepo {
      );
 
     // Modifiers
-    modifier onlyOwner(address owner) {
+    modifier onlyOwner(address _owner) {
         require(msg.sender == owner, "This function can only be called by the contract owner");
         _;
     }
 
-    function logMessage(string memory messageValue, string memory broker_id ) public onlyOwner(owner) {
-        //write to the ledger
-         messageCounter++;
+    /**
+     * Get num of messages for a given topic.
+     */
+    function getNumberOfMessagesFromTopic(string memory topic) public view returns (uint) {
+        return messages[topic].length;
+    }
 
-        // store this article
-        messages[messageCounter] = Message(
-            messageCounter,
+    function logMessage(string memory topic, string memory messageValue, string memory broker_id ) public onlyOwner(owner) {
+        // check if the topic already exists
+        if(messages[topic].length > 0) {
+            //get the message map for this topic and add the new message
+            uint msgCount = messages[topic].length;
+            Message memory newMessage = Message(
+            msgCount,
             messageValue,
             broker_id,
-            msg.sender
-        );
+            msg.sender);
+            messages[topic].push(newMessage);
+        } else {
+            // add first first for a new topic
+            Message[] memory newMessages;
+            messages[topic] = newMessages;
+            Message memory newMessage = Message(0, messageValue, broker_id, msg.sender);
+            newMessages[0] = newMessage;
+            //messages[topic] = newMessages; //https://stackoverflow.com/questions/49345903/copying-of-type-struct-memory-memory-to-storage-not-yet-supported/49350916
+        }
         emit MessageLogged(messageValue, broker_id, msg.sender);
     }
 }
