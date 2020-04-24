@@ -100,7 +100,7 @@ const requestDataAccessClaim = async (didObject) => {
     const claimName = 'MQTT_AccessClaim';
     const signer = SimpleSigner(keyPair.privateKey);
     let idOwner = await requestDataAccessUsingTruffleContract(didObject.address);
-    let resultValidDel = await addDelegateToDID(didObject);
+    //let resultValidDel = await addDelegateToDID(didObject);
     let expiry = 1957463421;
     if(didObject.address.toUpperCase() === idOwner.toUpperCase()) {
         let theToken = await didJWT.createJWT({ aud: didObject.did, exp: expiry, claims: { 
