@@ -62,6 +62,31 @@ const requestDataAccessUsingTruffleContract = async (accountAddress) => {
     return idOwner;
 };
 
+function stringToBytes32(str) {
+    const buffstr = Buffer.from(str).toString("hex");
+    return buffstr + "0".repeat(64 - buffstr.length);
+  }
+
+/**
+ * The trust anchor once happy that Alive is the owner of this DID will add itself as a delegate 
+ * to her DID. This is in addition to the issuing of the JWT. 
+ * Use delegateType: sigAuth
+ * @param {EthrDID} didObject 
+ */
+const addDelegateToDID = async(didObject) => {
+    let contractInstance = await truffleDIDRegistryContract.deployed();
+    let returnValue = await contractInstance.addDelegate(didObject.address, stringToBytes32("did-jwt"), thisDid.address, 86400, {from: process.env.ROPSTEN_ACCOUNT_0_ADDRESS, gas: 5000000});
+    console.log("Return from addDelegate:", returnValue);
+};
+
+/**
+ * A test to check via the DID Registry if the specified delegate
+ * @param {EthrDID} didObject 
+ */
+const validDelegate = async (didObject) => {
+    
+};
+
 /**
  * Called by a party who wishes to request a claim from this anchor. They pass their DID formulated ID string
  * and if everything checks out a JWT is returned. Many assumptions are made here on the caller's ID having
@@ -75,6 +100,7 @@ const requestDataAccessClaim = async (didObject) => {
     const claimName = 'MQTT_AccessClaim';
     const signer = SimpleSigner(keyPair.privateKey);
     let idOwner = await requestDataAccessUsingTruffleContract(didObject.address);
+    let resultValidDel = await addDelegateToDID(didObject);
     let expiry = 1957463421;
     if(didObject.address.toUpperCase() === idOwner.toUpperCase()) {
         let theToken = await didJWT.createJWT({ aud: didObject.did, exp: expiry, claims: { 

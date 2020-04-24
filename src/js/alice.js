@@ -75,7 +75,7 @@ const getSensorData = () => {
 };
 
 //resolveMyDID();
-//getMyClaim();
+getMyClaim();
 //getNumberOfClaims();
 
 

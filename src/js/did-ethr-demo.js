@@ -30,7 +30,7 @@ const ethrDidResolver = getResolver({
  * I would pass that specific resolver to the Resolver object.
  */
 const didResolver = new Resolver(ethrDidResolver)
-let ethrDid
+let signerDID
 
 
 let createEthrDID = async () => {
@@ -51,8 +51,10 @@ let createEthrDID = async () => {
     // create the signer from the private key
     const signer = SimpleSigner(keyPair.privateKey)
 
+    // add signer as a delegate to bobsDID
+
     //Generating Ethr DID
-    ethrDid = new EthrDID({
+    signerDID = new EthrDID({
         ...keyPair,
         provider: web3,
         registry: ethereumDIDRegistryAddress
@@ -69,8 +71,8 @@ let createEthrDID = async () => {
     //console.log("Resolved DID: ", didDocument)
     
     //create a DID for Bob issued by the main DID
-    didJWT.createJWT({ aud: bobsDID.did, exp: 1957463421, claims: { name: 'MTQQ_Read', admin: false, readMQTT: true, somethingElse: true }, name: 'Bob\'s Claim' },
-         { alg: `ES256K-R`, issuer: ethrDid.did, signer }).then(theJWT => {
+    didJWT.createJWT({ aud: bobsDID.did, exp: 1957463421, claims: { name: 'MTQQ_Read', admin: false, readMQTT: true, writeMQTT: true }, name: 'IoT Device Claim' },
+         { alg: `ES256K-R`, issuer: signerDID.did, signer }).then(theJWT => {
             // decode it just for debug purposes
             console.log("Bob's Unverified JWT:", didJWT.decodeJWT(theJWT))
             // when verifying the token I need to pass the audience argument if it was specified as the 'aud' argument in the createJWT call

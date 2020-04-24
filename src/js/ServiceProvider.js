@@ -33,6 +33,10 @@ const didResolver = new Resolver(ethrDidResolver);
  * 
  */
 const authoriseDataAccessClaim = async (jwt, didObject) => {
+
+    // Glenn: In addition to the verifyJWT call this provider should make a call to the did-registry.validDelegate(..)
+    // to ensure if the delegate is indeed a valid delegate. Use sigAuth as delegate type.
+
     let result = didJWT.verifyJWT(jwt, {resolver: didResolver, audience: didObject.did }).then((verifiedResponse) => {
         console.log("Service Provider: Alice's verified JWT ", verifiedResponse);
         return verifiedResponse;
@@ -41,6 +45,8 @@ const authoriseDataAccessClaim = async (jwt, didObject) => {
         });
     return result;
  };
+
+
 
 
  /**
@@ -81,7 +87,7 @@ const requestIOTData = async (jwt, didObject) => {
 
     // call the smart contract to look up the txn hash. 
 
-    // use IPFS api to grab it
+    // use IPFS api to grab it @see https://github.com/ipfs/js-ipfs
 
     // decrypt it and send it to Alice
 };
