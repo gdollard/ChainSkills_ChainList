@@ -96,8 +96,9 @@ const broadcastToLedger = async(broker_id) => {
     let contractInstance = await messageBroadcasterContract.deployed();
 
     // For now just make up a chunk reference
-    let fakeChunkRef = 'Hello Two3232';
-    let claimResult = await contractInstance.addMessageChunkReference(broker_id, fakeChunkRef, {from: accountNumber, gas: 500000} ).then
+    let fakeIPFSHash = '432355hhr889764s';
+    let fakeTimestamp = '747347323421003';
+    let claimResult = await contractInstance.addMessageChunkReference(broker_id, fakeTimestamp, fakeIPFSHash, {from: accountNumber, gas: 500000} ).then
             (result => {
                 console.log("result from addMessageChunkReference: ", result);
                 return result;
@@ -107,21 +108,21 @@ const broadcastToLedger = async(broker_id) => {
     return claimResult;
 };
 
-const getTotalNumberOfMessagesLogged = async () => {
-  const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
-  let contractInstance = await messageBroadcasterContract.deployed();
-  let claimResult = await contractInstance.getTotalNumberOfMessages();
-  console.log("Number of messages logged: ", claimResult.toNumber());
-};
 
-const getAllHashes = async (broker_id) => {
+const getAllHashesForBroker = async (broker_id) => {
   const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
   let contractInstance = await messageBroadcasterContract.deployed();
   let claimResult = await contractInstance.getHashes(broker_id);
   console.log("Hashes Returned: ", claimResult);
 };
 
+const getTotalNumberOfMessagesForBroker = async (broker_id) => {
+  const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
+  let contractInstance = await messageBroadcasterContract.deployed();
+  let claimResult = await contractInstance.getTotalNumberOfMessagesForBroker(broker_id);
+  console.log("Hashes Returned: ", claimResult.toNumber());
+};
 
-//getTotalNumberOfMessagesLogged();
-//broadcastToLedger("testBroker");
-getAllHashes("testBroker");
+// getTotalNumberOfMessagesForBroker("newBroker3");
+//  broadcastToLedger("newBroker3");
+//getAllHashesForBroker("newBroker2");

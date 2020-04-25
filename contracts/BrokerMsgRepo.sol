@@ -9,16 +9,12 @@ contract BrokerMessageRepo {
     address public owner = msg.sender;
 
     // brokerID -> IPFS hash
-    mapping(string => string[]) public messages;
-    uint hashCounter;
+    mapping(string => Message[]) public messages;
 
     // Custom types Messages
     struct Message {
-        uint id;
-        string topic;
-        string message;
-        string broker_name;
-        address submitter;
+        string timestamp;
+        string hashVal;
     }
     
     event MessageLogged (
@@ -41,16 +37,18 @@ contract BrokerMessageRepo {
         return (keccak256(abi.encode(stringA)) == keccak256(abi.encode(stringB)));
     }
 
-    function addMessageChunkReference(string memory _brokerID, string memory _ipfsHash) public returns(uint) {
-        // https://ethereum.stackexchange.com/questions/12097/creating-dynamic-arrays
-        hashCounter++;
-        messages[_brokerID].push(_ipfsHash);
+
+    /**
+     * Adds a new message struct to the list for the given broker ID.
+     */
+    function addMessageChunkReference(string memory _brokerID, string memory _timestamp, string memory _ipfsHash) public onlyOwner returns(uint) {
+        messages[_brokerID].push(Message(_timestamp, _ipfsHash));
         
         //emit MessageLogged(_ipfsHash, _brokerID, msg.sender);
     }
 
-    // Get the IPFS hashes stored for a given broker ID
-    function getHashes(string memory _brokerID) public view returns (string[] memory) {
+    // Get all Message structs for given broker ID
+    function getHashes(string memory _brokerID) public view returns (Message[] memory) {
         return messages[_brokerID];
     }
 
@@ -58,8 +56,8 @@ contract BrokerMessageRepo {
     /**
      * Get num of messages for a given topic.
      */
-    function getTotalNumberOfMessages() public view returns (uint) {
-        return hashCounter;
+    function getTotalNumberOfMessagesForBroker(string memory _brokerID) public view returns (uint) {
+        return messages[_brokerID].length;
     }
 
 }
