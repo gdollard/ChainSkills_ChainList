@@ -23,6 +23,8 @@ let messageBroadcasterContract = truffleContract(messageBroadcasterArtifact);
 //messageBroadcasterContract.setProvider(HDwalletProvider);
 messageBroadcasterContract.setProvider(ganacheProvider);
 
+let messages = [];
+let messageSize = 0;
 
 const mqtt_options = {
   // keepalive: 10,
@@ -63,7 +65,7 @@ const myDID = new EthrDID({
 client.on('connect', function () {
   client.subscribe('TestTopic', function (err) {
     if (!err) {
-      console.log("Subscribed..");
+      console.log("Listening to broker messages..");
     }
   });
 });
@@ -72,8 +74,13 @@ client.on('connect', function () {
 client.on('message', function (topic, message) {
     // message is Buffer
     console.log("Received a message: %s on topic %s, next up write this to the ledger if authorised.", message.toString(), topic);
+    messageSize = messages.push(message);
     
-    //broadcastToLedger(topic, message.toString(), "MosquittoBroker_CK_IE_0");
+    if(messageSize == process.env.MESSAGE_BUFFER_LIMIT) {
+      console.log("Going to publish...");
+      broadcastToLedger("MosquittoBroker_CK_IE_0");
+    }
+    
     //client.end();
   });
 
@@ -83,16 +90,20 @@ client.on('message', function (topic, message) {
  * a message from the local broker.
  * Takes a message: string
  */
-const broadcastToLedger = async(topic, message, broker_id) => {
+const broadcastToLedger = async(broker_id) => {
     //const ropsten_0_address = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;
     const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
     let contractInstance = await messageBroadcasterContract.deployed();
-    let claimResult = contractInstance.addMessage(topic, message, broker_id, {from: accountNumber, gas: 5000000} ).then
+
+    // For now just make up a chunk reference
+    let fakeChunkRef = 'Hello Two3232';
+    let claimResult = await contractInstance.addMessageChunkReference(broker_id, fakeChunkRef, {from: accountNumber, gas: 500000} ).then
             (result => {
-                console.log("result from txn: ", result);
+                console.log("result from addMessageChunkReference: ", result);
                 return result;
         }).catch(function (err) {
         console.log("Promise Rejected", err)});
+    console.log("Returned value is: ", claimResult);
     return claimResult;
 };
 
@@ -103,4 +114,14 @@ const getTotalNumberOfMessagesLogged = async () => {
   console.log("Number of messages logged: ", claimResult.toNumber());
 };
 
+const getAllHashes = async (broker_id) => {
+  const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
+  let contractInstance = await messageBroadcasterContract.deployed();
+  let claimResult = await contractInstance.getHashes(broker_id);
+  console.log("Hashes Returned: ", claimResult);
+};
+
+
 //getTotalNumberOfMessagesLogged();
+//broadcastToLedger("testBroker");
+getAllHashes("testBroker");
