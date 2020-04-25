@@ -18,9 +18,9 @@ const publishMessages = async () => {
   console.log("CONNECTED TO BROKER, publishing now...");
 
     while(true) {
-      await sleep(2000)
-      console.log("Publish...");
-      client.publish('TestTopic', 'Hello there on TestTopic');
+      let randNumber = Math.floor(Math.random() * 100);
+      await sleep(process.env.MOSQUITTO_PUBLISH_FREQUENCY_MS);
+      client.publish('TestTopic', 'Test message_' + randNumber);
     }
 };
 

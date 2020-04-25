@@ -5,6 +5,7 @@
  * 
  * Using MQTT.js https://github.com/mqttjs/MQTT.js as the client.
  */
+var File = require("file-class");
 var mqtt = require('mqtt');
 const HDWalletProvider = require("truffle-hdwallet-provider");
 require('dotenv').config();
@@ -23,26 +24,17 @@ let messageBroadcasterContract = truffleContract(messageBroadcasterArtifact);
 //messageBroadcasterContract.setProvider(HDwalletProvider);
 messageBroadcasterContract.setProvider(ganacheProvider);
 
+const BROKER_ID = "MosquittoBroker_CK_IE_0";
 let messages = [];
-let messageSize = 0;
+
+const IPFS = require('ipfs');
+const all = require('it-all');
+const ipfsAPI = require('ipfs-api');
 
 const mqtt_options = {
-  // keepalive: 10,
-  // clientId: clientId,
-  // protocolId: 'MQTT',
-  // protocolVersion: 4,
-  // clean: true,
-  // reconnectPeriod: 1000,
-  // connectTimeout: 30 * 1000,
-  // will: {
-  //   topic: 'WillMsg',
-  //   payload: 'Connection Closed abnormally..!',
-  //   qos: 0,
-  //   retain: false
-  // },
   username: process.env.MOSQUITTO_USERNAME,
   password: process.env.MOSQUITTO_PASSWORD
-  //rejectUnauthorized: false
+  
 };
 
 var client  = mqtt.connect('mqtt://localhost:1883', mqtt_options);
@@ -74,14 +66,13 @@ client.on('connect', function () {
 client.on('message', function (topic, message) {
     // message is Buffer
     console.log("Received a message: %s on topic %s, next up write this to the ledger if authorised.", message.toString(), topic);
-    messageSize = messages.push(message);
-    
+    let messageSize = messages.push(message+ '\n');
+
     if(messageSize == process.env.MESSAGE_BUFFER_LIMIT) {
       console.log("Going to publish...");
-      broadcastToLedger("MosquittoBroker_CK_IE_0");
-      messages = [];
+      submitToStorage();
+      
     }
-    
     //client.end();
   });
 
@@ -91,15 +82,13 @@ client.on('message', function (topic, message) {
  * a message from the local broker.
  * Takes a message: string
  */
-const broadcastToLedger = async(broker_id) => {
+const broadcastToLedger = async(broker_id, timestamp, hashValue ) => {
     //const ropsten_0_address = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;
     const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
     let contractInstance = await messageBroadcasterContract.deployed();
 
-    // For now just make up a chunk reference
-    let fakeIPFSHash = '432355hhr889764s';
-    let fakeTimestamp = '747347323421003';
-    let claimResult = await contractInstance.addMessageChunkReference(broker_id, fakeTimestamp, fakeIPFSHash, {from: accountNumber, gas: 500000} ).then
+    
+    let claimResult = await contractInstance.addMessageChunkReference(broker_id, timestamp, hashValue, {from: accountNumber, gas: 500000} ).then
             (result => {
                 console.log("result from addMessageChunkReference: ", result);
                 return result;
@@ -108,6 +97,8 @@ const broadcastToLedger = async(broker_id) => {
     console.log("Returned value is: ", claimResult);
     return claimResult;
 };
+
+
 
 
 const getAllHashesForBroker = async (broker_id) => {
@@ -124,6 +115,79 @@ const getTotalNumberOfMessagesForBroker = async (broker_id) => {
   console.log("Hashes Returned: ", claimResult.toNumber());
 };
 
-// getTotalNumberOfMessagesForBroker("MosquittoBroker_CK_IE_0");
-//  broadcastToLedger("newBroker3");
-// getAllHashesForBroker("MosquittoBroker_CK_IE_0");
+const addMore = async (testFile) => {
+  //let testBuffer = Buffer.from(testFile);
+  let fileBuffer = new Uint8Array(testFile);
+  const ipfs = ipfsAPI('ipfs.infura.io', '5001', {protocol: 'https'})
+  ipfs.files.add(fileBuffer, function (err, file) {
+    if (err) {
+      console.log(err);
+    }
+    console.log(file)
+  })
+};
+
+
+/**
+ * Publish the received messages to an IPFS data store.
+ * @See https://github.com/ipfs/interface-js-ipfs-core/blob/master/SPEC/FILES.md#cat
+ */
+const submitToStorage = async () => {
+  let mainString = messages.join(' ');
+  const node = await IPFS.create();
+
+  for await (const file of node.add(mainString)) 
+  {
+    // clear out previously stored messages
+    
+    console.log(">> CID >>>", JSON.stringify(file));
+    let timeStmp = new Date().getTime().toString();
+    console.log("Sending CID: ", file.cid.toString());
+    broadcastToLedger(BROKER_ID, timeStmp, file.cid.toString());
+  }
+
+  // I'm calling stop here for this reason: https://discuss.ipfs.io/t/how-to-reset-the-lock-file-programmatically-in-ipfs-0-41-1/7363/2
+  // Perhaps there's a better way to do this.
+  node.stop();
+
+  // reset previously stored messages
+  messages = []; 
+};
+
+/**
+ * Queries the IPFS endpoint with the CID for the content.
+ * example: https://ipfs.io/ipfs/Qmb74tGyo7m94jwWb3aMqEr5Jpn7U5r6fBVR5fJ7QvqMnz
+ */
+const testGet = async() => {
+  const node = await IPFS.create();
+  const data = Buffer.concat(await all(node.cat("QmU32D32gYmnpppCcusqzd688svcMqV7RKev9JWUn6PQ92")));
+  //let ary = data.toString().split(',');
+  
+  console.log('Added file contents: \n', data.toString());
+};
+
+const testSubmitStorage = () => {
+  var msgs = [];
+  msgs.push("One"+ "\n");
+  msgs.push("Twasjdfklsd fsdfjsdjkfjksfj sdkf jksdfhsdjkfdh fo" + "\n");
+  msgs.push("Somwethign else here" + "\n");
+  msgs.push("........ END .............."+ "\n");
+  
+  let inString = msgs.toString();
+  
+  // remove the commas from the array storage
+  let mainString = msgs.join(' ');
+  submitToStorage(mainString);
+};
+
+
+
+// getTotalNumberOfMessagesForBroker(BROKER_ID);
+// broadcastToLedger("newBroker3");
+//getAllHashesForBroker(BROKER_ID);
+// testSubmitStorage();
+  // testGet();
+
+
+
+
