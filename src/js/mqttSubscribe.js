@@ -79,6 +79,7 @@ client.on('message', function (topic, message) {
     if(messageSize == process.env.MESSAGE_BUFFER_LIMIT) {
       console.log("Going to publish...");
       broadcastToLedger("MosquittoBroker_CK_IE_0");
+      messages = [];
     }
     
     //client.end();
@@ -123,6 +124,6 @@ const getTotalNumberOfMessagesForBroker = async (broker_id) => {
   console.log("Hashes Returned: ", claimResult.toNumber());
 };
 
-// getTotalNumberOfMessagesForBroker("newBroker3");
+// getTotalNumberOfMessagesForBroker("MosquittoBroker_CK_IE_0");
 //  broadcastToLedger("newBroker3");
-//getAllHashesForBroker("newBroker2");
+// getAllHashesForBroker("MosquittoBroker_CK_IE_0");
