@@ -122,17 +122,17 @@ const requestDataAccessClaim = async (didObject) => {
 
         
         // next add the claim
-        let theClaimTxnReceipt = await writeClaimToLedger(claimName, didObject.address, theToken, expiry).catch(error => {
-            console.log("Failed to write the claim to the ledger: ", error);
-            return null;
-        });
+        // let theClaimTxnReceipt = await writeClaimToLedger(claimName, didObject.address, theToken, expiry).catch(error => {
+        //     console.log("Failed to write the claim to the ledger: ", error);
+        //     return null;
+        // });
         
-        if(theClaimTxnReceipt) {
+        // if(theClaimTxnReceipt) {
             return theToken;
-        }
-        else {
-            return null;
-        }
+        // }
+        // else {
+        //     return null;
+        // }
     //}
 };
 
@@ -171,17 +171,17 @@ const requestDataPublishClaim = async (didObject) => {
 
         
         // next add the claim to the ledger
-        let theClaimTxnReceipt = await writeClaimToLedger(claimName, didObject.address, theToken, expiry).catch(error => {
-            console.log("Failed to write the claim to the ledger: ", error);
-            return null;
-        });
+        // let theClaimTxnReceipt = await writeClaimToLedger(claimName, didObject.address, theToken, expiry).catch(error => {
+        //     console.log("Failed to write the claim to the ledger: ", error);
+        //     return null;
+        // });
         
-        if(theClaimTxnReceipt) {
+        // if(theClaimTxnReceipt) {
             return theToken;
-        }
-        else {
-            return null;
-        }
+        // }
+        // else {
+        //     return null;
+        // }
     //}
 };
 

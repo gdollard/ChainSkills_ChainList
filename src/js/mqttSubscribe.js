@@ -73,7 +73,6 @@ client.on('message', function (topic, message) {
     if(messageSize == process.env.MESSAGE_BUFFER_LIMIT) {
       console.log("Going to publish...");
       submitToStorage();
-      
     }
     //client.end();
   });
@@ -84,7 +83,7 @@ client.on('message', function (topic, message) {
  * a message from the local broker.
  * Takes a message: string
  */
-const broadcastToLedger = async(broker_id, timestamp, hashValue ) => {
+const broadcastToLedger_DEPRECATED = async(broker_id, timestamp, hashValue ) => {
     //const ropsten_0_address = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;
     const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
     let contractInstance = await messageBroadcasterContract.deployed();
@@ -134,18 +133,18 @@ const addMore = async (testFile) => {
  * Publish the received messages to an IPFS data store.
  * @See https://github.com/ipfs/interface-js-ipfs-core/blob/master/SPEC/FILES.md#cat
  */
-const submitToStorage = async () => {
-  let mainString = messages.join(' ');
+const submitToStorage = async (strData) => {
+  //let mainString = messages.join(' ');
   const node = await IPFS.create();
 
-  for await (const file of node.add(mainString)) 
+  for await (const file of node.add(strData)) 
   {
     // clear out previously stored messages
     
     console.log(">> CID >>>", JSON.stringify(file));
     let timeStmp = new Date().getTime().toString();
     console.log("Sending CID: ", file.cid.toString());
-    broadcastToLedger(BROKER_ID, timeStmp, file.cid.toString());
+    broadcastToLedger_DEPRECATED(BROKER_ID, timeStmp, file.cid.toString());
   }
 
   // I'm calling stop here for this reason: https://discuss.ipfs.io/t/how-to-reset-the-lock-file-programmatically-in-ipfs-0-41-1/7363/2
@@ -180,26 +179,27 @@ const testSubmitStorage = () => {
   submitToStorage(mainString);
 };
 
-const getAndVerifyMyClaim = () => {
+
+const testGetAndVerifyMyClaim = () => {
   requestDataPublishClaim(myDID).then((result) => {
       if(result === null) {
           console.log("Something went wrong, no token issued.");
           process.exit(1);
       } else {
-          console.log("IoT Layer JWT> ", result);
-          authDataPublish(result, myDID).then(auth => {
-              console.log("Claim granted?", auth);
-              process.exit(0);
+          //console.log("IoT Layer JWT> ", result);
+          let msgs = ["this", "is", "a", "test"];
+          authDataPublish(result, myDID, msgs, BROKER_ID).then(auth => {
+              console.log("Returned Storage Hash:", auth);
           });
       }
   });
 };
 
-// getAndVerifyMyClaim();
+ testGetAndVerifyMyClaim();
 // getTotalNumberOfMessagesForBroker(BROKER_ID);
 // broadcastToLedger("newBroker3");
 //getAllHashesForBroker(BROKER_ID);
-// testSubmitStorage();
+//testSubmitStorage();
   // testGet();
 
 

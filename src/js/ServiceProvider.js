@@ -1,15 +1,28 @@
 // This is the hypothetical Service Provider. It will receive a request for a service and via a Token verification
 // will determine if the request is to be granted.
 
-var Web3 = require('web3');
+require('dotenv').config();
 const HDWalletProvider = require("truffle-hdwallet-provider");
 var walletProvider =  new HDWalletProvider(process.env.MNEMONIC, "https://ropsten.infura.io/v3/" + process.env.INFURA_API_KEY);
-var web3 = new Web3(walletProvider);
+const Web3 = require('web3');
+var ganacheProvider = new Web3.providers.HttpProvider("http://localhost:7545");
+//var web3 = new Web3(ganacheProvider);
+
+//need to use the Ropsten provider because the resolver depends on it
+var web3 = new Web3(walletProvider); 
 const didJWT = require('did-jwt');
 const Resolver = require('did-resolver').Resolver;
 const getResolver = require('ethr-did-resolver').getResolver;
 const IPFS = require('ipfs');
 const all = require('it-all');
+
+
+const messageBroadcasterArtifact = require('../../build/contracts/BrokerMessageRepo.json');
+//const messageBroadcasterContractAddress = '0xD773c6028307E882Ec0c8a72D198B4C337345100';
+var truffleContract = require("@truffle/contract");
+let messageBroadcasterContract = truffleContract(messageBroadcasterArtifact);
+//messageBroadcasterContract.setProvider(HDwalletProvider);
+messageBroadcasterContract.setProvider(ganacheProvider);
 
 //Ethereum DID Registery address (smart contract)
 const ETHEREUM_DID_REGISTRY_ADDRESS = '0xdCa7EF03e98e0DC2B855bE647C39ABe984fcF21B'
@@ -54,78 +67,86 @@ const authoriseDataAccessClaim = async (jwt, didObject) => {
   * While basically a copy of the other auth claim function the idea is this function could be
   * implemented by a different Service Provider on the network.
   */
- const authoriseDataPublishClaim = async (jwt, didObject) => {
+ const authoriseDataPublishClaim = async (jwt, didObject, messages, brokerID) => {
 
     // Glenn: In addition to the verifyJWT call this provider should make a call to the did-registry.validDelegate(..)
     // to ensure if the delegate is indeed a valid delegate. Use sigAuth as delegate type.
-
     let result = didJWT.verifyJWT(jwt, {resolver: didResolver, audience: didObject.did }).then((verifiedResponse) => {
-        console.log("Service Provider: IoT Publisher verified JWT ", verifiedResponse);
-        
-        return verifiedResponse;
+        //console.log("Service Provider: IoT Publisher verified JWT ", verifiedResponse);
+        let cid = submitToStorage(messages, brokerID);
+        return cid;// verifiedResponse;
         }).catch(error => {
-            console.log("Sorry IoT Publisher, Service Provider says No! ", error.message);
+            console.log("Sorry IoT Publisher, Service Provider says No! ", error);
         });
     return result;
  };
 
 
 
-
  /**
-  * Is responsible taking the chunk of IOT data, encrypt it and invoke the smart contract to persist the data onto an IPFS node. 
-  * It will then ensure the transaction is recorded in the ledger for future requests.
-  * 
-  * This will be called by the MQTT nodes to publish their data to the ledger.
-  * 
-  * @param {string} jwt 
-  * @param {EthrDID} didObject 
-  *  @param {Buffer} iotData 
-  */
-const processIOTData = async (jwt, didObject, iotData) => {
-
-    // verify the JWT and the didObject
-
-    // encrypt the data using the private key of this provider
-
-    // add the encrypted chunk to IPFS
-
-    // write the TXN with the txnHash of the IPFS call to the ledger
-};
-
-/**
  * Queries the IPFS endpoint with the CID for the content.
  * example: https://ipfs.io/ipfs/Qmb74tGyo7m94jwWb3aMqEr5Jpn7U5r6fBVR5fJ7QvqMnz
  */
-const getIoTData = async() => {
+ const getIoTData = async() => {
     const node = await IPFS.create();
     const data = Buffer.concat(await all(node.cat("QmU32D32gYmnpppCcusqzd688svcMqV7RKev9JWUn6PQ92")));
     node.stop();
     return data.toString();
   };
 
-
-
-
-/**
- * Alice will call this to retrieve IOT data. The Service Provider will verify Alice's credentials and if she is authorised the
- * data is retrieved from IPFS using the txn hash from the ledger. The data will be encrypted at this point but the provider
- * will decrypt it for Alice and will return it to her in a Buffer or some other compatible form.
- * 
- * @param {string} jwt 
- * @param {EthrDID} didObject 
- */
-const requestIOTData = async (jwt, didObject) => {
+  /**
+  * Is responsible for taking the chunk of IOT data, encrypt it and invoke the smart contract to persist the data onto an IPFS node. 
+  * It will then ensure the transaction is recorded in the ledger for future requests.
+  * 
+  * This will be called by the MQTT nodes to publish their data to the ledger.
+  * 
+  * Publish the received messages to an IPFS data store.
+  * @See https://github.com/ipfs/interface-js-ipfs-core/blob/master/SPEC/FILES.md#cat
+  */
+const submitToStorage = async (messages, brokerID) => {
+    console.log("Attmpting to submit to IPFS...", messages);
+    let mainString = messages.join(' ');
+    const node = await IPFS.create();
+    let cid;
+    for await (const file of node.add(mainString)) 
+    {      
+        console.log(">> CID >>>", JSON.stringify(file));
+        let timeStmp = new Date().getTime().toString();
+        console.log("Sending CID: ", file.cid.toString());
+        cid = file.cid.toString();
+        broadcastToLedger(brokerID, timeStmp, file.cid.toString());
+    }
     
-    // verify jwt and didObject
+    // I'm calling stop here for this reason: https://discuss.ipfs.io/t/how-to-reset-the-lock-file-programmatically-in-ipfs-0-41-1/7363/2
+    // Perhaps there's a better way to do this.
+    node.stop();
 
-    // somehow find a way to identify the chunk of data that is required
+    return cid;
+  };
 
-    // call the smart contract to look up the txn hash. 
 
-    // use IPFS api to grab it @see https://github.com/ipfs/js-ipfs
-
-    // decrypt it and send it to Alice
+  /**
+ * Calls the smart contract to broadcast the message to the ledger once this client receives
+ * a message from the local broker. The timestamp and hashValue are written to the ledger
+ * mapped by the brokerID
+ * 
+ */
+const broadcastToLedger = async(brokerID, timestamp, hashValue ) => {
+    //const ropsten_0_address = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;
+    const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
+    let contractInstance = await messageBroadcasterContract.deployed();
+    console.log("About to write to ledger:", brokerID, timestamp, hashValue);
+    let result = await contractInstance.addMessageChunkReference(brokerID, timestamp, hashValue, {from: accountNumber, gas: 500000} ).then
+            (result => {
+                console.log("result from addMessageChunkReference: ", result);
+                return result;
+        }).catch(function (err) {
+        console.log("Promise Rejected", err)});
+    console.log("Returned value is: ", result);
+    return result;
 };
+
+
+
 
  module.exports = {authoriseDataAccessClaim, authoriseDataPublishClaim};
