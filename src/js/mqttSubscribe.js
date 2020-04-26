@@ -29,10 +29,6 @@ messageBroadcasterContract.setProvider(ganacheProvider);
 const BROKER_ID = "MosquittoBroker_CK_IE_0";
 let messages = [];
 
-const IPFS = require('ipfs');
-const all = require('it-all');
-const ipfsAPI = require('ipfs-api');
-
 const mqtt_options = {
   username: process.env.MOSQUITTO_USERNAME,
   password: process.env.MOSQUITTO_PASSWORD
@@ -71,37 +67,14 @@ client.on('message', function (topic, message) {
     let messageSize = messages.push(message+ '\n');
 
     if(messageSize == process.env.MESSAGE_BUFFER_LIMIT) {
-      console.log("Going to publish...");
-      submitToStorage();
+      publishData();
     }
     //client.end();
   });
 
 
-/**
- * Calls the smart contract to broadcast the message to the ledger once this client receives
- * a message from the local broker.
- * Takes a message: string
- */
-const broadcastToLedger_DEPRECATED = async(broker_id, timestamp, hashValue ) => {
-    //const ropsten_0_address = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;
-    const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
-    let contractInstance = await messageBroadcasterContract.deployed();
 
-    
-    let claimResult = await contractInstance.addMessageChunkReference(broker_id, timestamp, hashValue, {from: accountNumber, gas: 500000} ).then
-            (result => {
-                console.log("result from addMessageChunkReference: ", result);
-                return result;
-        }).catch(function (err) {
-        console.log("Promise Rejected", err)});
-    console.log("Returned value is: ", claimResult);
-    return claimResult;
-};
-
-
-
-
+// Keeping getters here for reference
 const getAllHashesForBroker = async (broker_id) => {
   const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
   let contractInstance = await messageBroadcasterContract.deployed();
@@ -109,6 +82,7 @@ const getAllHashesForBroker = async (broker_id) => {
   console.log("Hashes Returned: ", claimResult);
 };
 
+// Keeping getters here for reference
 const getTotalNumberOfMessagesForBroker = async (broker_id) => {
   const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
   let contractInstance = await messageBroadcasterContract.deployed();
@@ -116,92 +90,25 @@ const getTotalNumberOfMessagesForBroker = async (broker_id) => {
   console.log("Hashes Returned: ", claimResult.toNumber());
 };
 
-const addMore = async (testFile) => {
-  //let testBuffer = Buffer.from(testFile);
-  let fileBuffer = new Uint8Array(testFile);
-  const ipfs = ipfsAPI('ipfs.infura.io', '5001', {protocol: 'https'})
-  ipfs.files.add(fileBuffer, function (err, file) {
-    if (err) {
-      console.log(err);
-    }
-    console.log(file)
-  })
-};
 
 
 /**
- * Publish the received messages to an IPFS data store.
- * @See https://github.com/ipfs/interface-js-ipfs-core/blob/master/SPEC/FILES.md#cat
+ * This function publishes the latest set of messages to the IPFS data store.
+ * It will then write the Content Identifier (CID) to our BrokerMsgRepo smart contract.
  */
-const submitToStorage = async (strData) => {
-  //let mainString = messages.join(' ');
-  const node = await IPFS.create();
-
-  for await (const file of node.add(strData)) 
-  {
-    // clear out previously stored messages
-    
-    console.log(">> CID >>>", JSON.stringify(file));
-    let timeStmp = new Date().getTime().toString();
-    console.log("Sending CID: ", file.cid.toString());
-    broadcastToLedger_DEPRECATED(BROKER_ID, timeStmp, file.cid.toString());
-  }
-
-  // I'm calling stop here for this reason: https://discuss.ipfs.io/t/how-to-reset-the-lock-file-programmatically-in-ipfs-0-41-1/7363/2
-  // Perhaps there's a better way to do this.
-  node.stop();
-
-  // reset previously stored messages
-  messages = []; 
-};
-
-/**
- * Queries the IPFS endpoint with the CID for the content.
- * example: https://ipfs.io/ipfs/Qmb74tGyo7m94jwWb3aMqEr5Jpn7U5r6fBVR5fJ7QvqMnz
- */
-const testGet = async() => {
-  const node = await IPFS.create();
-  const data = Buffer.concat(await all(node.cat("QmU32D32gYmnpppCcusqzd688svcMqV7RKev9JWUn6PQ92")));
-  console.log('Added file contents: \n', data.toString());
-};
-
-const testSubmitStorage = () => {
-  var msgs = [];
-  msgs.push("One"+ "\n");
-  msgs.push("Twasjdfklsd fsdfjsdjkfjksfj sdkf jksdfhsdjkfdh fo" + "\n");
-  msgs.push("Somwethign else here" + "\n");
-  msgs.push("........ END .............."+ "\n");
-  
-  let inString = msgs.toString();
-  
-  // remove the commas from the array storage
-  let mainString = msgs.join(' ');
-  submitToStorage(mainString);
-};
-
-
-const testGetAndVerifyMyClaim = () => {
+const publishData = async () => {
   requestDataPublishClaim(myDID).then((result) => {
       if(result === null) {
           console.log("Something went wrong, no token issued.");
           process.exit(1);
       } else {
-          //console.log("IoT Layer JWT> ", result);
-          let msgs = ["this", "is", "a", "test"];
-          authDataPublish(result, myDID, msgs, BROKER_ID).then(auth => {
+          console.log(">>>>> mqttSubscriber: Publishing messages to storage <<<<<<");
+          authDataPublish(result, myDID, messages, BROKER_ID).then(auth => {
               console.log("Returned Storage Hash:", auth);
+              messages = [];
           });
       }
   });
 };
-
- testGetAndVerifyMyClaim();
-// getTotalNumberOfMessagesForBroker(BROKER_ID);
-// broadcastToLedger("newBroker3");
-//getAllHashesForBroker(BROKER_ID);
-//testSubmitStorage();
-  // testGet();
-
-
 
 

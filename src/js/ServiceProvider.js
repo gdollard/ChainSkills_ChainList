@@ -69,7 +69,7 @@ const authoriseDataAccessClaim = async (jwt, didObject) => {
   */
  const authoriseDataPublishClaim = async (jwt, didObject, messages, brokerID) => {
 
-    // Glenn: In addition to the verifyJWT call this provider should make a call to the did-registry.validDelegate(..)
+    // In addition to the verifyJWT call this provider should make a call to the did-registry.validDelegate(..)
     // to ensure if the delegate is indeed a valid delegate. Use sigAuth as delegate type.
     let result = didJWT.verifyJWT(jwt, {resolver: didResolver, audience: didObject.did }).then((verifiedResponse) => {
         //console.log("Service Provider: IoT Publisher verified JWT ", verifiedResponse);
@@ -86,10 +86,12 @@ const authoriseDataAccessClaim = async (jwt, didObject) => {
  /**
  * Queries the IPFS endpoint with the CID for the content.
  * example: https://ipfs.io/ipfs/Qmb74tGyo7m94jwWb3aMqEr5Jpn7U5r6fBVR5fJ7QvqMnz
+ * 
+ * Pending hash: QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH
  */
  const getIoTData = async() => {
     const node = await IPFS.create();
-    const data = Buffer.concat(await all(node.cat("QmU32D32gYmnpppCcusqzd688svcMqV7RKev9JWUn6PQ92")));
+    const data = Buffer.concat(await all(node.cat("Qmb74tGyo7m94jwWb3aMqEr5Jpn7U5r6fBVR5fJ7QvqMnz")));
     node.stop();
     return data.toString();
   };
@@ -104,7 +106,6 @@ const authoriseDataAccessClaim = async (jwt, didObject) => {
   * @See https://github.com/ipfs/interface-js-ipfs-core/blob/master/SPEC/FILES.md#cat
   */
 const submitToStorage = async (messages, brokerID) => {
-    console.log("Attmpting to submit to IPFS...", messages);
     let mainString = messages.join(' ');
     const node = await IPFS.create();
     let cid;
@@ -112,7 +113,6 @@ const submitToStorage = async (messages, brokerID) => {
     {      
         console.log(">> CID >>>", JSON.stringify(file));
         let timeStmp = new Date().getTime().toString();
-        console.log("Sending CID: ", file.cid.toString());
         cid = file.cid.toString();
         broadcastToLedger(brokerID, timeStmp, file.cid.toString());
     }
@@ -135,18 +135,21 @@ const broadcastToLedger = async(brokerID, timestamp, hashValue ) => {
     //const ropsten_0_address = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;
     const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
     let contractInstance = await messageBroadcasterContract.deployed();
-    console.log("About to write to ledger:", brokerID, timestamp, hashValue);
+    console.log("****** Service Provider Recording CID for broker: %s ******", brokerID);
     let result = await contractInstance.addMessageChunkReference(brokerID, timestamp, hashValue, {from: accountNumber, gas: 500000} ).then
             (result => {
-                console.log("result from addMessageChunkReference: ", result);
                 return result;
         }).catch(function (err) {
-        console.log("Promise Rejected", err)});
-    console.log("Returned value is: ", result);
+    });
+    
     return result;
 };
 
 
-
-
  module.exports = {authoriseDataAccessClaim, authoriseDataPublishClaim};
+
+ // testing
+//  let previousData = getIoTData().then(response => {
+//     console.log(response);
+//  });
+ 
