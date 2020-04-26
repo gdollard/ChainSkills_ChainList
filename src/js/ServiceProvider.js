@@ -8,6 +8,8 @@ var web3 = new Web3(walletProvider);
 const didJWT = require('did-jwt');
 const Resolver = require('did-resolver').Resolver;
 const getResolver = require('ethr-did-resolver').getResolver;
+const IPFS = require('ipfs');
+const all = require('it-all');
 
 //Ethereum DID Registery address (smart contract)
 const ETHEREUM_DID_REGISTRY_ADDRESS = '0xdCa7EF03e98e0DC2B855bE647C39ABe984fcF21B'
@@ -34,14 +36,35 @@ const didResolver = new Resolver(ethrDidResolver);
  */
 const authoriseDataAccessClaim = async (jwt, didObject) => {
 
+    // In addition to the verifyJWT call this provider should make a call to the did-registry.validDelegate(..)
+    // to ensure if the delegate is indeed a valid delegate. Use sigAuth as delegate type.
+
+    let result = didJWT.verifyJWT(jwt, {resolver: didResolver, audience: didObject.did }).then((verifiedResponse) => {
+        //console.log("Service Provider: Alice's verified JWT ", verifiedResponse);
+        let iotData = getIoTData();
+        return iotData;
+        }).catch(error => {
+            console.log("Sorry Alice, Service Provider says No! ", error.message);
+        });
+    return result;
+ };
+
+ /**
+  * 
+  * While basically a copy of the other auth claim function the idea is this function could be
+  * implemented by a different Service Provider on the network.
+  */
+ const authoriseDataPublishClaim = async (jwt, didObject) => {
+
     // Glenn: In addition to the verifyJWT call this provider should make a call to the did-registry.validDelegate(..)
     // to ensure if the delegate is indeed a valid delegate. Use sigAuth as delegate type.
 
     let result = didJWT.verifyJWT(jwt, {resolver: didResolver, audience: didObject.did }).then((verifiedResponse) => {
-        console.log("Service Provider: Alice's verified JWT ", verifiedResponse);
+        console.log("Service Provider: IoT Publisher verified JWT ", verifiedResponse);
+        
         return verifiedResponse;
         }).catch(error => {
-            console.log("Sorry Alice, Service Provider says No! ", error.message);
+            console.log("Sorry IoT Publisher, Service Provider says No! ", error.message);
         });
     return result;
  };
@@ -70,6 +93,19 @@ const processIOTData = async (jwt, didObject, iotData) => {
     // write the TXN with the txnHash of the IPFS call to the ledger
 };
 
+/**
+ * Queries the IPFS endpoint with the CID for the content.
+ * example: https://ipfs.io/ipfs/Qmb74tGyo7m94jwWb3aMqEr5Jpn7U5r6fBVR5fJ7QvqMnz
+ */
+const getIoTData = async() => {
+    const node = await IPFS.create();
+    const data = Buffer.concat(await all(node.cat("QmU32D32gYmnpppCcusqzd688svcMqV7RKev9JWUn6PQ92")));
+    node.stop();
+    return data.toString();
+  };
+
+
+
 
 /**
  * Alice will call this to retrieve IOT data. The Service Provider will verify Alice's credentials and if she is authorised the
@@ -92,4 +128,4 @@ const requestIOTData = async (jwt, didObject) => {
     // decrypt it and send it to Alice
 };
 
- module.exports = {authoriseDataAccessClaim};
+ module.exports = {authoriseDataAccessClaim, authoriseDataPublishClaim};

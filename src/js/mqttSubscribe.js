@@ -5,6 +5,8 @@
  * 
  * Using MQTT.js https://github.com/mqttjs/MQTT.js as the client.
  */
+const requestDataPublishClaim = require('./TrustAnchor').requestDataPublishClaim;
+const authDataPublish = require('./ServiceProvider').authoriseDataPublishClaim;
 var File = require("file-class");
 var mqtt = require('mqtt');
 const HDWalletProvider = require("truffle-hdwallet-provider");
@@ -57,7 +59,7 @@ const myDID = new EthrDID({
 client.on('connect', function () {
   client.subscribe('TestTopic', function (err) {
     if (!err) {
-      console.log("Listening to broker messages..");
+      console.log("Connected to broker...");
     }
   });
 });
@@ -161,8 +163,6 @@ const submitToStorage = async () => {
 const testGet = async() => {
   const node = await IPFS.create();
   const data = Buffer.concat(await all(node.cat("QmU32D32gYmnpppCcusqzd688svcMqV7RKev9JWUn6PQ92")));
-  //let ary = data.toString().split(',');
-  
   console.log('Added file contents: \n', data.toString());
 };
 
@@ -180,8 +180,22 @@ const testSubmitStorage = () => {
   submitToStorage(mainString);
 };
 
+const getAndVerifyMyClaim = () => {
+  requestDataPublishClaim(myDID).then((result) => {
+      if(result === null) {
+          console.log("Something went wrong, no token issued.");
+          process.exit(1);
+      } else {
+          console.log("IoT Layer JWT> ", result);
+          authDataPublish(result, myDID).then(auth => {
+              console.log("Claim granted?", auth);
+              process.exit(0);
+          });
+      }
+  });
+};
 
-
+// getAndVerifyMyClaim();
 // getTotalNumberOfMessagesForBroker(BROKER_ID);
 // broadcastToLedger("newBroker3");
 //getAllHashesForBroker(BROKER_ID);

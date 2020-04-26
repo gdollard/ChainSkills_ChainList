@@ -50,11 +50,11 @@ const thisDid = new EthrDID({
 
 
 /**
- * Calling the identityOwner function of the registry smart contract using the Truffle 
- * contract abstraction.
+ * Calling the identityOwner function of the Ethereum DID Registry smart contract.
+ * Using the Truffle contract abstraction.
  * 
  */
-const requestDataAccessUsingTruffleContract = async (accountAddress) => {
+const verifyIdentityOwner = async (accountAddress) => {
     
     //verify the owner of the identity by calling the Ethereum registry contract using web3
     let contractInstance = await truffleDIDRegistryContract.deployed();
@@ -99,10 +99,12 @@ const validDelegate = async (didObject) => {
 const requestDataAccessClaim = async (didObject) => {
     const claimName = 'MQTT_AccessClaim';
     const signer = SimpleSigner(keyPair.privateKey);
-    let idOwner = await requestDataAccessUsingTruffleContract(didObject.address);
+    let idOwner = await verifyIdentityOwner(didObject.address);
     //let resultValidDel = await addDelegateToDID(didObject);
     let expiry = 1957463421;
-    if(didObject.address.toUpperCase() === idOwner.toUpperCase()) {
+    
+    //*** UNCOMMENT THIS IF STMT BEFORE DEPLOYING TO ROPSTEN */
+    //if(didObject.address.toUpperCase() === idOwner.toUpperCase()) {
         let theToken = await didJWT.createJWT({ aud: didObject.did, exp: expiry, claims: { 
             name: claimName, 
             admin: false, 
@@ -131,7 +133,56 @@ const requestDataAccessClaim = async (didObject) => {
         else {
             return null;
         }
-    }
+    //}
+};
+
+/**
+ * Called by a party who wishes to request a claim from this anchor in order to publish data. They pass their DID formulated ID string
+ * and if everything checks out a JWT is returned. Many assumptions are made here on the caller's ID having
+ * previously been created upon an inspection and approval process on behalf of this Trust Anchor. This function
+ * keeps it all high-level for proof of concept.
+ * 
+ * did is an EthrDID object.
+ * 
+ */
+const requestDataPublishClaim = async (didObject) => {
+    const claimName = 'MQTT_PublishClaim';
+    const signer = SimpleSigner(keyPair.privateKey);
+    //let idOwner = await verifyIdentityOwner(didObject.address);
+    //let resultValidDel = await addDelegateToDID(didObject);
+    let expiry = 2957473425;
+    
+    //*** UNCOMMENT THIS IF STMT BEFORE DEPLOYING TO ROPSTEN */
+    //if(didObject.address.toUpperCase() === idOwner.toUpperCase()) {
+        let theToken = await didJWT.createJWT({ aud: didObject.did, exp: expiry, claims: { 
+            name: claimName, 
+            admin: false, 
+            publishMQTT: true }, 
+            name: 'Publish MQTT for '+ didObject.did},
+             { alg: `ES256K-R`, 
+             issuer: thisDid.did, 
+              signer }).catch(error => {
+                 console.log("Error when creating Token: ", error.message);
+                 return null;
+             });
+        if(theToken == null){
+            return theToken;
+        }
+
+        
+        // next add the claim to the ledger
+        let theClaimTxnReceipt = await writeClaimToLedger(claimName, didObject.address, theToken, expiry).catch(error => {
+            console.log("Failed to write the claim to the ledger: ", error);
+            return null;
+        });
+        
+        if(theClaimTxnReceipt) {
+            return theToken;
+        }
+        else {
+            return null;
+        }
+    //}
 };
 
 
@@ -162,5 +213,5 @@ const getNumberOfIssuedClaims = async () => {
     return numClaims;    
 };
 
-module.exports = {getNumberOfIssuedClaims, requestDataAccessClaim, resolveDID, web3, ETHEREUM_DID_REGISTRY_ADDRESS };
+module.exports = {requestDataPublishClaim, getNumberOfIssuedClaims, requestDataAccessClaim, resolveDID, web3, ETHEREUM_DID_REGISTRY_ADDRESS };
 

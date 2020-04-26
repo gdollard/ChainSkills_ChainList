@@ -33,11 +33,6 @@ const resolveMyDID = () => {
 };
 
 
-
-/**
- * This basic function makes a call to the trust anchor to apply for a token.
- * The anchor returns a Promise<string> which contains a token signed by the anchor.
- */
 const getMyClaim = () => {
     requestDataAccessClaim(ethrDid).then((result) => {
         if(result === null) {
@@ -46,7 +41,7 @@ const getMyClaim = () => {
         } else {
             console.log("Alice's JWT> ", result);
             authDataAccess(result, ethrDid).then(auth => {
-                console.log("Claim granted?", auth);
+                console.log("IOT Data ?", auth);
                 process.exit(0);
             });
         }
