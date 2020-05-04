@@ -2,7 +2,11 @@ const HDWalletProvider = require("truffle-hdwallet-provider");
 require('dotenv').config(); //need this module to retrieve the infura mnemonic and API key
 const Web3 = require('web3');
 var HDwalletProvider =  new HDWalletProvider(process.env.MNEMONIC, "https://ropsten.infura.io/v3/" + process.env.INFURA_API_KEY);
+var ganacheProvider = new Web3.providers.HttpProvider("http://localhost:7545");
+
+// set the provider for the web3 interface so it can access the accounts (for fees)
 const web3 = new Web3(HDwalletProvider);
+//const web3 = new Web3(ganacheProvider);
 const DidRegistryContract = require('ethr-did-registry');
 const Contract = require("@truffle/contract");
 const truffleDIDRegistryContract = Contract(DidRegistryContract);
@@ -18,7 +22,10 @@ const { SimpleSigner } = require('did-jwt');
 const trustAnchorContractAddress = '0xC5baD71aB5443402155daB864C2F3fE4b01700a7';
 var truffleContract = require("@truffle/contract");
 let trustAnchorContract = truffleContract(trustAnchorArtifact);
+
+// set the provider for the contract so it can be accessed on that network
 trustAnchorContract.setProvider(HDwalletProvider);
+//trustAnchorContract.setProvider(ganacheProvider);
 
 //Registering Ethr Did To Resolver
 const ethrDidResolver = getResolver({
@@ -92,13 +99,6 @@ const addDelegateToDID = async(didObject) => {
     console.log("Return from addDelegate:", returnValue);
 };
 
-/**
- * A test to check via the DID Registry if the specified delegate
- * @param {EthrDID} didObject 
- */
-const validDelegate = async (didObject) => {
-    
-};
 
 /**
  * Called by a party who wishes to request a claim from this anchor. They pass their DID formulated ID string
@@ -117,7 +117,7 @@ const requestDataAccessClaim = async (didObject) => {
     let expiry = 1957463421;
     
     //*** UNCOMMENT THIS IF STMT BEFORE DEPLOYING TO ROPSTEN */
-    //if(didObject.address.toUpperCase() === idOwner.toUpperCase()) {
+    if(didObject.address.toUpperCase() === idOwner.toUpperCase()) {
         let theToken = await didJWT.createJWT({ aud: didObject.did, exp: expiry, claims: { 
             name: claimName, 
             admin: false, 
@@ -135,18 +135,18 @@ const requestDataAccessClaim = async (didObject) => {
 
         
         // next add the claim
-        // let theClaimTxnReceipt = await writeClaimToLedger(claimName, didObject.address, theToken, expiry).catch(error => {
-        //     console.log("Failed to write the claim to the ledger: ", error);
-        //     return null;
-        // });
+        let theClaimTxnReceipt = await writeClaimToLedger(claimName, didObject.address, theToken, expiry).catch(error => {
+            console.log("Failed to write the claim to the ledger: ", error);
+            return null;
+        });
         
-        // if(theClaimTxnReceipt) {
+        if(theClaimTxnReceipt) {
             return theToken;
-        // }
-        // else {
-        //     return null;
-        // }
-    //}
+        }
+        else {
+            return null;
+        }
+    }
 };
 
 /**
@@ -161,12 +161,12 @@ const requestDataAccessClaim = async (didObject) => {
 const requestDataPublishClaim = async (didObject) => {
     const claimName = 'MQTT_PublishClaim';
     const signer = SimpleSigner(keyPair.privateKey);
-    //let idOwner = await verifyIdentityOwner(didObject.address);
+    let idOwner = await verifyIdentityOwner(didObject.address);
     //let resultValidDel = await addDelegateToDID(didObject);
     let expiry = 2957473425;
     
     //*** UNCOMMENT THIS IF STMT BEFORE DEPLOYING TO ROPSTEN */
-    //if(didObject.address.toUpperCase() === idOwner.toUpperCase()) {
+    if(didObject.address.toUpperCase() === idOwner.toUpperCase()) {
         let theToken = await didJWT.createJWT({ aud: didObject.did, exp: expiry, claims: { 
             name: claimName, 
             admin: false, 
@@ -184,18 +184,18 @@ const requestDataPublishClaim = async (didObject) => {
 
         
         // next add the claim to the ledger
-        // let theClaimTxnReceipt = await writeClaimToLedger(claimName, didObject.address, theToken, expiry).catch(error => {
-        //     console.log("Failed to write the claim to the ledger: ", error);
-        //     return null;
-        // });
+        let theClaimTxnReceipt = await writeClaimToLedger(claimName, didObject.address, theToken, expiry).catch(error => {
+            console.log("Failed to write the claim to the ledger: ", error);
+            return null;
+        });
         
-        // if(theClaimTxnReceipt) {
+        if(theClaimTxnReceipt) {
             return theToken;
-        // }
-        // else {
-        //     return null;
-        // }
-    //}
+        }
+        else {
+            return null;
+        }
+    }
 };
 
 
@@ -204,9 +204,11 @@ const requestDataPublishClaim = async (didObject) => {
  * The contract it calls is TrustAnchor.sol
  */
 const writeClaimToLedger = async() => {
-    const ropsten_0_address = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;
+    const accountAddress = process.env.ROPSTEN_ACCOUNT_0_ADDRESS; //GANACHE_ADDRESS_ACCOUNT_0
+
     let trustAnchorInstance = await trustAnchorContract.deployed();
-    let claimResult = trustAnchorInstance.addClaim("MyTestClaim", trustAnchorContractAddress, "test Token", 12345, {from: ropsten_0_address, gas: 5000000}).then
+    let claimResult = trustAnchorInstance.addClaim("MyTestClaim", trustAnchorContractAddress, "test Token", 12345, 
+        {from: accountAddress, gas: 500000}).then
             (result => {
                 return result;
         }).catch(function (err) {
@@ -228,10 +230,36 @@ const getNumberOfIssuedClaims = async () => {
 
 module.exports = {requestDataPublishClaim, getNumberOfIssuedClaims, requestDataAccessClaim, resolveDID, web3, ETHEREUM_DID_REGISTRY_ADDRESS };
 
+// ******** Some quick testing stuff****************************
+let startTime, endTime;
 
-// testing
-//let did = requestDID();
+function start() {
+  startTime = new Date();
+};
+
+function end() {
+  endTime = new Date();
+  var timeDiff = endTime - startTime; //in ms
+  // strip the ms
+  timeDiff /= 1000;
+
+  // get seconds 
+  var seconds = Math.round(timeDiff);
+  console.log(seconds + " seconds");
+}
+
+// testing requesting DID then requesting publish claim
+//start();
+// let did = requestDID();
+// requestDataAccessClaim(did).then(data => {
+//     end();
+//     console.log("Done.", data);
+//     process.exit();
+// });
+
+
 
 // resolveDID(did).then(response => {
 //     console.log("Resolved: ", response);
 // });
+
