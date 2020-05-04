@@ -6,7 +6,6 @@ pragma solidity >0.4.99 <0.6.0;
 */
 contract TrustAnchor {
 
-    string public message;
     mapping(uint => Claim) public claims;
     uint claimCounter;
 
@@ -48,13 +47,4 @@ contract TrustAnchor {
         return claimCounter;
     }
 
-    // Just a tester function
-    function setMessage(string memory newMessage) public {
-        message = newMessage;
-    }
-
-    // Tester function
-     function getMessage() public view returns (string memory) {
-        return "Hello from the Trust Anchor";
-    }
 }

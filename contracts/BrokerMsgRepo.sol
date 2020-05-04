@@ -23,10 +23,7 @@ contract BrokerMessageRepo {
         address indexed sourceAccount
      );
 
-     event DebugEvent (
-         string message
-     );
-
+     
     // Modifiers
     modifier onlyOwner() {
         require(msg.sender == owner, "This function can only be called by the contract owner");

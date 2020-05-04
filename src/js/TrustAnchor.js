@@ -50,6 +50,19 @@ const thisDid = new EthrDID({
 
 
 /**
+ * Can be called by any party wishing to request a DID.
+ */
+const requestDID = () => {
+    const keyPair = EthrDID.createKeyPair();
+    //console.log("Keypair:", keyPair);
+    return new EthrDID({
+        ...keyPair,
+        provider: web3,
+        registry: ETHEREUM_DID_REGISTRY_ADDRESS
+    });
+};
+
+/**
  * Calling the identityOwner function of the Ethereum DID Registry smart contract.
  * Using the Truffle contract abstraction.
  * 
@@ -215,3 +228,10 @@ const getNumberOfIssuedClaims = async () => {
 
 module.exports = {requestDataPublishClaim, getNumberOfIssuedClaims, requestDataAccessClaim, resolveDID, web3, ETHEREUM_DID_REGISTRY_ADDRESS };
 
+
+// testing
+//let did = requestDID();
+
+// resolveDID(did).then(response => {
+//     console.log("Resolved: ", response);
+// });
