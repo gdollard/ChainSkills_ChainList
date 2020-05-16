@@ -1,5 +1,9 @@
-// This is the hypothetical Service Provider. It will receive a request for a service and via a Token verification
-// will determine if the request is to be granted.
+/**
+ * This is the hypothetical Service Provider. It will handle requests for data storage
+ * and retrieval. It will perform claim verification using the EtherDID Registry. 
+ * 
+ * G. Dollard
+ */
 
 require('dotenv').config();
 const HDWalletProvider = require("truffle-hdwallet-provider");
@@ -51,28 +55,57 @@ const didResolver = new Resolver(ethrDidResolver);
  * good then the request is authorised.
  * 
  */
-const authoriseDataAccessClaim = async (jwt, didObject, brokerID) => {
+const authoriseDataAccessClaim = async (jwt, didObject, brokerID, timestamp) => {
 
     // In addition to the verifyJWT call this provider should make a call to the did-registry.validDelegate(..)
     // to ensure if the delegate is indeed a valid delegate. Use sigAuth as delegate type.
 
     let result = didJWT.verifyJWT(jwt, {resolver: didResolver, audience: didObject.did }).then((verifiedResponse) => {
-
-        //TODO: get the hashes for the specified broker
-        let hashData = getContentHashes(brokerID).then(result => {
-            return result;
-        });
-
-        //do some filtering and pass the CID to getIoTData below..
-
-        //console.log("Service Provider: Alice's verified JWT ", verifiedResponse);
-        let iotData = getIoTData();
-        return iotData;
+        // Get the hashes for the specified broker
+        let data = getContentHashes(brokerID).then(messageObjects => {
+            for(i = 0; i < messageObjects.length; i++) {
+                if(messageObjects[i].timestamp == timestamp) {
+                    const iotData = getIoTData(messageObjects[i].hashVal);
+                    return iotData; 
+                }
+            }
+            return null;
         }).catch(error => {
             console.log("Sorry, Service Provider says No! ", error.message);
         });
+        return data;
+    });
     return result;
  };
+
+
+ /**
+  * This function returns a list of timestamps representing when files were published to
+  * the IPFS node. A user would typically use the returned data to query specific files
+  * using the timestamps.
+  * 
+  * @param {*} jwt 
+  * @param {*} didObject 
+  * @param {*} brokerID 
+  */
+ const getPublishedTimestamps = async (jwt, didObject, brokerID) => {
+    let result = didJWT.verifyJWT(jwt, {resolver: didResolver, audience: didObject.did }).then((verifiedResponse) => {
+        // Get the hashes for the specified broker
+        let data = getContentHashes(brokerID).then(messageObjects => {
+            let timestamps = [];
+            //iterate thru the objects extracting the timestamp
+            for(i = 0; i < messageObjects.length; i++) {
+                timestamps.push(messageObjects[i].timestamp);
+            }
+            return timestamps;
+            }).catch(error => {
+                console.log("Sorry, Service Provider says No! ", error.message);
+            });
+        return data;
+        });
+    return result;
+ };
+
 
  /**
   * While basically a copy of the other auth claim function the idea is this function could be
@@ -101,9 +134,9 @@ const authoriseDataAccessClaim = async (jwt, didObject, brokerID) => {
  * Pending hash samples: QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH, QmYvDazN8PSVSC6r4iHRd5JK13yViGm8bY9QmwaocSeY54, 
  * QmYvDazN8PSVSC6r4iHRd5JK13yViGm8bY9QmwaocSeY54, QmcHtsrdNwh8DjeySHCaK9xdwVhHwfqWsnKugA9Chdvpmi
  */
- const getIoTData = async() => {
+ const getIoTData = async(cidHash) => {
     const node = await IPFS.create();
-    const data = Buffer.concat(await all(node.cat("Qmb74tGyo7m94jwWb3aMqEr5Jpn7U5r6fBVR5fJ7QvqMnz")));
+    const data = Buffer.concat(await all(node.cat(cidHash)));
     node.stop();
     return data.toString();
   };
@@ -189,7 +222,6 @@ const getContentHashes = async(brokerID) => {
     console.log("****** Service Provider Quering CIDs for broker: %s ******", brokerID);
     let result = await contractInstance.getHashes(brokerID, {from: accountNumber, gas: 500000} ).then
             (result => {
-                console.log("Back from ledger..");
                 return result;
         });
     return result;
@@ -197,7 +229,7 @@ const getContentHashes = async(brokerID) => {
 
 
 
- module.exports = {authoriseDataAccessClaim, authoriseDataPublishClaim};
+ module.exports = {authoriseDataAccessClaim, authoriseDataPublishClaim, getPublishedTimestamps};
 
  //---------------------------------- test code ---------------------------------------------------
 
@@ -218,17 +250,12 @@ function end() {
   console.log(seconds + " seconds");
 }
 
-const getAllHashesForBroker = async () => {
-    let contractInstance = await messageBroadcasterContract.deployed();
-    let claimResult = await contractInstance.getHashes(BROKER_ID);
-    console.log("Hashes Returned: ", claimResult);
-  };
 
-  const getTotalNumberOfMessagesForBroker = async (brokerID) => {
+const getTotalNumberOfMessagesForBroker = async (brokerID) => {
     let contractInstance = await messageBroadcasterContract.deployed();
     let claimResult = await contractInstance.getTotalNumberOfMessagesForBroker(brokerID);
     console.log("Messages: ", claimResult.toNumber());
-  };
+};
   
 
   

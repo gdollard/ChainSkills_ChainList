@@ -8,25 +8,17 @@
 var fs = require('fs');
 const requestDataPublishClaim = require('./TrustAnchor').requestDataPublishClaim;
 const authDataPublish = require('./ServiceProvider').authoriseDataPublishClaim;
-var File = require("file-class");
 var mqtt = require('mqtt');
 const HDWalletProvider = require("truffle-hdwallet-provider");
 var walletProvider =  new HDWalletProvider(process.env.MNEMONIC, "https://ropsten.infura.io/v3/" + process.env.INFURA_API_KEY);
 require('dotenv').config();
 const Web3 = require('web3');
-var ganacheProvider = new Web3.providers.HttpProvider("http://localhost:7545");
 var web3 = new Web3(walletProvider); 
-
-//const Web3 = require('web3');
-//var HDwalletProvider =  new HDWalletProvider(process.env.MNEMONIC, "https://ropsten.infura.io/v3/" + process.env.INFURA_API_KEY);
-//const web3 = new Web3(HDwalletProvider);
 const EthrDID = require('ethr-did');
-const messageBroadcasterArtifact = require('../../build/contracts/BrokerMessageRepo.json');
 
 
 const BROKER_ID = "MosquittoBroker_CK_IE_0";
 let messageCount = 0;
-//const homedir = require('os').homedir();
 const MESSAGE_FILE_NAME = "./input.txt";
 const MESSAGE_FILE_NAME_SP = "./input_SP.txt";
 
@@ -65,8 +57,6 @@ mqttClient.on('connect', function () {
 mqttClient.on('message', function (topic, message) {
     console.log("Received a message: %s on topic %s, next up write this to the ledger if authorised.", message.toString(), topic);
     appendMessageToFile(message);
-    //openAndAppend(message);
-    //writeMessageToStream(message);
     messageCount++;
     if(messageCount >= process.env.MESSAGE_BUFFER_LIMIT) {
       //publishData();
@@ -74,25 +64,6 @@ mqttClient.on('message', function (topic, message) {
       messageCount=0;
     }
   });
-
-
-
-// Keeping getters here for reference
-const getAllHashesForBroker = async (broker_id) => {
-  const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
-  let contractInstance = await messageBroadcasterContract.deployed();
-  let claimResult = await contractInstance.getHashes(broker_id);
-  console.log("Hashes Returned: ", claimResult);
-};
-
-// Keeping getters here for reference
-const getTotalNumberOfMessagesForBroker = async (broker_id) => {
-  const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0;
-  let contractInstance = await messageBroadcasterContract.deployed();
-  let claimResult = await contractInstance.getTotalNumberOfMessagesForBroker(broker_id);
-  console.log("Hashes Returned: ", claimResult.toNumber());
-};
-
 
 
 /**
@@ -106,8 +77,8 @@ const publishData = async () => {
       authDataPublish(claim, myDID, MESSAGE_FILE_NAME, BROKER_ID).then(auth => {
           console.log("Returned Transaction Receipt:", auth);
           //clear out local messages, no longer needed
-          // deleteMessageFile();
           clearFile();
+          deleteSPMessageFile();
       });
   }).catch(error => {
     console.log("Failed to publish the messages: \"%s\"", error.message);
@@ -127,8 +98,7 @@ const publishDataWithExistingClaim = async (claim) => {
   //copy the file and send it to the SP (to avoid locking issues back here)
   fs.copyFile(MESSAGE_FILE_NAME, MESSAGE_FILE_NAME_SP, (err) => {
     if (err) throw err;
-    
-    console.log('File copied...');
+  
     authDataPublish(claim, myDID, MESSAGE_FILE_NAME_SP, BROKER_ID).then((auth) => {
         console.log("Data was successfully published.");
         //clear out local messages, no longer needed
@@ -140,30 +110,6 @@ const publishDataWithExistingClaim = async (claim) => {
   });
 }
 
-const writeMessageToStream = (message) => {
-  const writeStream = fs.createWriteStream(MESSAGE_FILE_NAME);
-  writeStream.write(message, 'utf8', error => {
-    // close the stream
-    writeStream.end();
-  });
-  // the finish event is emitted when all data has been flushed from the stream
-  writeStream.on('finish', () => {
-    console.log('----------------------------------------');
-  });
-}
-
-
-const openAndAppend = (message) => {
-  fs.open(MESSAGE_FILE_NAME, 'a', (err, fd) => {
-    if (err) throw err;
-    fs.appendFile(fd, message, 'utf8', (err) => {
-      fs.close(fd, (err) => {
-        if (err) throw err;
-      });
-      if (err) throw err;
-    });
-  });
-}
 
 /*
 * As the broker receives messages it will add them to the file (if file storage is preferred over
@@ -195,50 +141,4 @@ const clearFile = () => {
     console.log('File reset.');
   });
 }
-
-
-let startTime, endTime;
-
-function start() {
-  startTime = new Date();
-};
-
-function end() {
-  endTime = new Date();
-  var timeDiff = endTime - startTime; //in ms
-  // strip the ms
-  timeDiff /= 1000;
-
-  // get seconds 
-  var seconds = Math.round(timeDiff);
-  console.log(seconds + " seconds");
-}
-
-//------------------------ Test code ---------------------------------------------
-const tokenString = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NkstUiJ9.eyJpYXQiOjE1ODg1OTgzMjIsImV4cCI6Mjk1NzQ3MzQyNSwiYXVkIjoiZGlkOmV0aHI6MHgyOTRmZjcxYjI4M2IxNWZjMjE4ZjRkZGFkMTY5MjI2MzczZjgzYzY3IiwiY2xhaW1zIjp7Im5hbWUiOiJNUVRUX1B1Ymxpc2hDbGFpbSIsImFkbWluIjpmYWxzZSwicHVibGlzaE1RVFQiOnRydWV9LCJuYW1lIjoiUHVibGlzaCBNUVRUIGZvciBkaWQ6ZXRocjoweDI5NGZmNzFiMjgzYjE1ZmMyMThmNGRkYWQxNjkyMjYzNzNmODNjNjciLCJpc3MiOiJkaWQ6ZXRocjoweDlkMTk2M2VjZDVhZjY1ZmYxZjA0N2Y5YjE3NzIwN2RhYTBmOTBiYWMifQ.1FfD7jwHf8RkuHCHHR6m12WRl1FKpaEAt-KxvlkOkymlSuMyWZRXXe0IR1AMYjbY13bTPop7VydVJM6k4b6KigA";
-
-const testpublishData = () => {
-  //  messages.push("Test data");
-  //  messages.push("And this is more data");
-  //  messages.push("Broker time: 11:48 Fri May 16");
-  //appendMessageToFile("Is this the last message??");
-  start();
-  //publishData(); // request a claim AND publish data 
-  publishDataWithExistingClaim(tokenString); //publish data with an existing claim (faster)
-
-  // call to get the JWT only
-  // requestDataPublishClaim(myDID).then((result) => {
-  //   console.log("claim:", result);
-  // });
-
-    // authDataPublish(tokenString, myDID, messages, BROKER_ID).then(auth => {
-    //   console.log("Returned Storage Hash:", auth);
-    //   messages = [];
-    //   end();
-    //   //process.exit();
-    //});
-};
-
-//testpublishData();
-
 
