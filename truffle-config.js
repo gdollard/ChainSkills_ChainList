@@ -11,12 +11,6 @@ module.exports = {
             network_id: "*", // Match any network id
             gas: 4700000
         },
-        chainskills: {
-            host: "localhost",
-            port: 8545,
-            network_id: "4224", // this is the network id of my private geth node
-            gas: 4700000
-        },
         rinkeby: {
             host: "localhost",
             port: 8545,
