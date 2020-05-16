@@ -5,7 +5,7 @@ const getNumberOfClaimsIssued = require('./TrustAnchor').getNumberOfIssuedClaims
 const authDataAccess = require('./ServiceProvider').authoriseDataAccessClaim;
 const web3 = require('./TrustAnchor').web3;
 const resolveDID = require('./TrustAnchor').resolveDID;
-
+const BROKER_ID = "MosquittoBroker_CK_IE_0";
 
 const keyPair = {
     address: process.env.EthrDID_ADDRESS_ALICE,
@@ -40,7 +40,7 @@ const getMyClaim = () => {
             process.exit(1);
         } else {
             console.log("Alice's JWT> ", result);
-            authDataAccess(result, ethrDid).then(auth => {
+            authDataAccess(result, ethrDid, BROKER_ID).then(auth => {
                 console.log("IOT Data ?", auth);
                 process.exit(0);
             });

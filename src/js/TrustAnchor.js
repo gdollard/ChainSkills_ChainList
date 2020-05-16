@@ -19,7 +19,7 @@ const Resolver = require('did-resolver').Resolver;
 const getResolver = require('ethr-did-resolver').getResolver;
 const didJWT = require('did-jwt');
 const { SimpleSigner } = require('did-jwt');
-const trustAnchorContractAddress = '0xC5baD71aB5443402155daB864C2F3fE4b01700a7';
+const trustAnchorContractAddress = '0x56A0964d2aBc42bB768A29c6c188097b451956F5';
 var truffleContract = require("@truffle/contract");
 let trustAnchorContract = truffleContract(trustAnchorArtifact);
 

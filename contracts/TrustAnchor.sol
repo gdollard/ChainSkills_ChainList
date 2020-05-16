@@ -2,11 +2,12 @@ pragma solidity >0.4.99 <0.6.0;
 
 /**
 * Chain representation of the claims issued by a typical trust anchor.
+
 * G. Dollard
 */
 contract TrustAnchor {
 
-    mapping(uint => Claim) public claims;
+    mapping(uint => Claim) private claims;
     uint claimCounter;
 
     // Custom types for the claim
@@ -46,5 +47,4 @@ contract TrustAnchor {
     function getNumberOfClaimsIssued() public view returns (uint) {
         return claimCounter;
     }
-
 }

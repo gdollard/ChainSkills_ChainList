@@ -1,15 +1,17 @@
 /*
-* This smart contract will take the passed broker message and will perist it in a distributed data store.
+* This smart contract will store all message objects mapped by BrokerID. 
+*
+* G. Dollard
 */
 pragma solidity >0.4.99 <0.6.0;
 pragma experimental ABIEncoderV2;
 
 contract BrokerMessageRepo {
 
-    address public owner = msg.sender;
+    address private owner = msg.sender;
 
     // brokerID -> IPFS hash
-    mapping(string => Message[]) public messages;
+    mapping(string => Message[]) private messages;
 
     // Custom types Messages
     struct Message {
@@ -17,13 +19,7 @@ contract BrokerMessageRepo {
         string hashVal;
     }
     
-    event MessageLogged (
-        string ipfsHash,
-        string brokerID,
-        address indexed sourceAccount
-     );
-
-     
+         
     // Modifiers
     modifier onlyOwner() {
         require(msg.sender == owner, "This function can only be called by the contract owner");
@@ -40,12 +36,10 @@ contract BrokerMessageRepo {
      */
     function addMessageChunkReference(string memory _brokerID, string memory _timestamp, string memory _ipfsHash) public onlyOwner returns(uint) {
         messages[_brokerID].push(Message(_timestamp, _ipfsHash));
-        
-        //emit MessageLogged(_ipfsHash, _brokerID, msg.sender);
     }
 
     // Get all Message structs for given broker ID
-    function getHashes(string memory _brokerID) public view returns (Message[] memory) {
+    function getHashes(string memory _brokerID) public view onlyOwner returns (Message[] memory) {
         return messages[_brokerID];
     }
 
@@ -56,5 +50,4 @@ contract BrokerMessageRepo {
     function getTotalNumberOfMessagesForBroker(string memory _brokerID) public view returns (uint) {
         return messages[_brokerID].length;
     }
-
 }
