@@ -6,11 +6,9 @@ const HDWalletProvider = require("truffle-hdwallet-provider");
 require('dotenv').config(); //need this module to retrieve the infura mnemonic and API key
 const Web3 = require('web3');
 var HDwalletProvider =  new HDWalletProvider(process.env.MNEMONIC, "https://ropsten.infura.io/v3/" + process.env.INFURA_API_KEY);
-var ganacheProvider = new Web3.providers.HttpProvider("http://localhost:7545");
 
 // set the provider for the web3 interface so it can access the accounts (for fees)
 const web3 = new Web3(HDwalletProvider);
-//const web3 = new Web3(ganacheProvider);
 const DidRegistryContract = require('ethr-did-registry');
 const Contract = require("@truffle/contract");
 const truffleDIDRegistryContract = Contract(DidRegistryContract);
@@ -29,7 +27,6 @@ let trustAnchorContract = truffleContract(trustAnchorArtifact);
 
 // set the provider for the contract so it can be accessed on that network
 trustAnchorContract.setProvider(HDwalletProvider);
-//trustAnchorContract.setProvider(ganacheProvider);
 
 //Registering Ethr Did To Resolver
 const ethrDidResolver = getResolver({
@@ -40,7 +37,6 @@ const didResolver = new Resolver(ethrDidResolver);
 
 /**
  * Resolves the given EthrDID object to produce a DID document in JSON. 
- * 
  */
 const resolveDID = async(didObject) => {
     const didDocument = await didResolver.resolve(didObject.did);
@@ -65,7 +61,6 @@ const thisDid = new EthrDID({
  */
 const requestDID = () => {
     const keyPair = EthrDID.createKeyPair();
-    //console.log("Keypair:", keyPair);
     return new EthrDID({
         ...keyPair,
         provider: web3,
@@ -76,7 +71,6 @@ const requestDID = () => {
 /**
  * Calling the identityOwner function of the Ethereum DID Registry smart contract.
  * Using the Truffle contract abstraction.
- * 
  */
 const verifyIdentityOwner = async (accountAddress) => {
     
@@ -85,11 +79,6 @@ const verifyIdentityOwner = async (accountAddress) => {
     let idOwner = await contractInstance.identityOwner(accountAddress);
     return idOwner;
 };
-
-function stringToBytes32(str) {
-    const buffstr = Buffer.from(str).toString("hex");
-    return buffstr + "0".repeat(64 - buffstr.length);
-  }
 
 
 /**
@@ -152,7 +141,6 @@ const requestDataPublishClaim = async (didObject) => {
     const claimName = 'MQTT_PublishClaim';
     const signer = SimpleSigner(keyPair.privateKey);
     let idOwner = await verifyIdentityOwner(didObject.address);
-    //let resultValidDel = await addDelegateToDID(didObject);
     let expiry = 2957473425;
     
     if(didObject.address.toUpperCase() === idOwner.toUpperCase()) {
@@ -193,7 +181,7 @@ const requestDataPublishClaim = async (didObject) => {
  * The contract it calls is TrustAnchor.sol
  */
 const writeClaimToLedger = async() => {
-    const accountAddress = process.env.ROPSTEN_ACCOUNT_0_ADDRESS; //GANACHE_ADDRESS_ACCOUNT_0
+    const accountAddress = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;
 
     let trustAnchorInstance = await trustAnchorContract.deployed();
     let claimResult = trustAnchorInstance.addClaim("MyTestClaim", trustAnchorContractAddress, "test Token", 12345, 
@@ -218,37 +206,3 @@ const getNumberOfIssuedClaims = async () => {
 };
 
 module.exports = {requestDataPublishClaim, getNumberOfIssuedClaims, requestDataAccessClaim, resolveDID, web3, ETHEREUM_DID_REGISTRY_ADDRESS };
-
-// ******** Some quick testing stuff****************************
-let startTime, endTime;
-
-function start() {
-  startTime = new Date();
-};
-
-function end() {
-  endTime = new Date();
-  var timeDiff = endTime - startTime; //in ms
-  // strip the ms
-  timeDiff /= 1000;
-
-  // get seconds 
-  var seconds = Math.round(timeDiff);
-  console.log(seconds + " seconds");
-}
-
-// testing requesting DID then requesting publish claim
-//start();
-// let did = requestDID();
-// requestDataAccessClaim(did).then(data => {
-//     end();
-//     console.log("Done.", data);
-//     process.exit();
-// });
-
-
-
-// resolveDID(did).then(response => {
-//     console.log("Resolved: ", response);
-// });
-

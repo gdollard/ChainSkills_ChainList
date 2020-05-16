@@ -108,7 +108,7 @@ const publishDataWithExistingClaim = async (claim) => {
         console.log("Failed to publish the messages: \"%s\"", error);
     });
   });
-}
+};
 
 
 /*

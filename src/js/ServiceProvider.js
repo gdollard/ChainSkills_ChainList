@@ -10,10 +10,6 @@ const HDWalletProvider = require("truffle-hdwallet-provider");
 var walletProvider =  new HDWalletProvider(process.env.MNEMONIC, "https://ropsten.infura.io/v3/" + process.env.INFURA_API_KEY);
 const Web3 = require('web3');
 var fs = require('fs');
-//var ganacheProvider = new Web3.providers.HttpProvider("http://localhost:7545");
-//var web3 = new Web3(ganacheProvider);
-
-//need to use the Ropsten provider because the resolver depends on it
 var web3 = new Web3(walletProvider); 
 const didJWT = require('did-jwt');
 const Resolver = require('did-resolver').Resolver;
@@ -23,13 +19,9 @@ const all = require('it-all');
 const EthrDID = require('ethr-did');
 
 const messageBroadcasterArtifact = require('../../build/contracts/BrokerMessageRepo.json');
-//const messageBroadcasterContractAddress = '0xE34E82BE99e662DB48A5A9b374ff0993EA536224';
 var truffleContract = require("@truffle/contract");
 let messageBroadcasterContract = truffleContract(messageBroadcasterArtifact);
 messageBroadcasterContract.setProvider(walletProvider);
-//messageBroadcasterContract.setProvider(ganacheProvider);
-
-//Ethereum DID Registery address (smart contract)
 const ETHEREUM_DID_REGISTRY_ADDRESS = '0xdCa7EF03e98e0DC2B855bE647C39ABe984fcF21B'
 
 // sample broker
@@ -56,10 +48,6 @@ const didResolver = new Resolver(ethrDidResolver);
  * 
  */
 const authoriseDataAccessClaim = async (jwt, didObject, brokerID, timestamp) => {
-
-    // In addition to the verifyJWT call this provider should make a call to the did-registry.validDelegate(..)
-    // to ensure if the delegate is indeed a valid delegate. Use sigAuth as delegate type.
-
     let result = didJWT.verifyJWT(jwt, {resolver: didResolver, audience: didObject.did }).then((verifiedResponse) => {
         // Get the hashes for the specified broker
         let data = getContentHashes(brokerID).then(messageObjects => {
@@ -71,7 +59,7 @@ const authoriseDataAccessClaim = async (jwt, didObject, brokerID, timestamp) => 
             }
             return null;
         }).catch(error => {
-            console.log("Sorry, Service Provider says No! ", error.message);
+            console.log("Error retrieving data from ledger/IPFS node: ", error.message);
         });
         return data;
     });
@@ -99,7 +87,7 @@ const authoriseDataAccessClaim = async (jwt, didObject, brokerID, timestamp) => 
             }
             return timestamps;
             }).catch(error => {
-                console.log("Sorry, Service Provider says No! ", error.message);
+                console.log("Error retrieving timestamps from ledger: ", error.message);
             });
         return data;
         });
@@ -128,11 +116,8 @@ const authoriseDataAccessClaim = async (jwt, didObject, brokerID, timestamp) => 
 
 
  /**
- * Queries the IPFS endpoint with the CID for the content.
+ * Queries the public IPFS gateway with the CID for the content.
  * example: https://ipfs.io/ipfs/Qmb74tGyo7m94jwWb3aMqEr5Jpn7U5r6fBVR5fJ7QvqMnz
- * 
- * Pending hash samples: QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH, QmYvDazN8PSVSC6r4iHRd5JK13yViGm8bY9QmwaocSeY54, 
- * QmYvDazN8PSVSC6r4iHRd5JK13yViGm8bY9QmwaocSeY54, QmcHtsrdNwh8DjeySHCaK9xdwVhHwfqWsnKugA9Chdvpmi
  */
  const getIoTData = async(cidHash) => {
     const node = await IPFS.create();
@@ -141,37 +126,12 @@ const authoriseDataAccessClaim = async (jwt, didObject, brokerID, timestamp) => 
     return data.toString();
   };
 
+  
   /**
-  * Is responsible for taking the chunk of IOT data and invoke the smart contract to persist the data onto an IPFS node. 
-  * It will then ensure the transaction is recorded in the ledger for future requests.
-  * 
-  * 
-  * Publish the received messages to an IPFS data store.
-  * @See https://github.com/ipfs/interface-js-ipfs-core/blob/master/SPEC/FILES.md#cat
-  * 
-  * @param {string}[] messages from the message agent.
-  */
-const submitToStorage = async (messages, brokerID) => {
-    let mainString = messages.join(' ');
-    const node = await IPFS.create();
-    let cid;
-    for await (const file of node.add(mainString)) 
-    {      
-        //console.log(">> CID >>>", JSON.stringify(file));
-        cid = file.cid.toString();
-    }
-    
-    // stopping the node when finished
-    // see: https://discuss.ipfs.io/t/how-to-reset-the-lock-file-programmatically-in-ipfs-0-41-1/7363/2
-    node.stop();
-    return cid;
-  };
-
-  /**
-   * This function is similar to submitToStorage(..) except it takes a file path
-   * of the file containing the messages from the message agent.
+   * This function is responsible for taking the chunk of IOT data and invoke 
+   * the smart contract to persist the data onto an IPFS node. 
    * 
-   * @param {string} messageFile - full path to file containing the messages to be published.
+   * @param {string} messageFile - full path to file to be published.
    */
   const submitMessageFileToStorage = async (messageFile) => {
     const node = await IPFS.create()
@@ -199,10 +159,8 @@ const submitToStorage = async (messages, brokerID) => {
 const broadcastToLedger = async(brokerID, timestamp, hashValue ) => {
     const accountNumber = process.env.ROPSTEN_ACCOUNT_0_ADDRESS; //GANACHE_ADDRESS_ACCOUNT_0
     let contractInstance = await messageBroadcasterContract.deployed();
-    console.log("****** Service Provider Recording CID for broker: %s ******", brokerID);
     let result = await contractInstance.addMessageChunkReference(brokerID, timestamp, hashValue, {from: accountNumber, gas: 500000} ).then
             (result => {
-                console.log("Back from ledger..");
                 return result;
         }).catch(function (err) {
     });    
@@ -217,9 +175,8 @@ const broadcastToLedger = async(brokerID, timestamp, hashValue ) => {
  * @param {string} brokerID - ID of the broker who published the messages.
  */
 const getContentHashes = async(brokerID) => {
-    const accountNumber = process.env.ROPSTEN_ACCOUNT_0_ADDRESS; //GANACHE_ADDRESS_ACCOUNT_0
+    const accountNumber = process.env.ROPSTEN_ACCOUNT_0_ADDRESS; 
     let contractInstance = await messageBroadcasterContract.deployed();
-    console.log("****** Service Provider Quering CIDs for broker: %s ******", brokerID);
     let result = await contractInstance.getHashes(brokerID, {from: accountNumber, gas: 500000} ).then
             (result => {
                 return result;
@@ -227,77 +184,21 @@ const getContentHashes = async(brokerID) => {
     return result;
 };
 
-
-
- module.exports = {authoriseDataAccessClaim, authoriseDataPublishClaim, getPublishedTimestamps};
-
- //---------------------------------- test code ---------------------------------------------------
-
- let startTime, endTime;
-
-function start() {
-  startTime = new Date();
-};
-
-function end() {
-  endTime = new Date();
-  var timeDiff = endTime - startTime; //in ms
-  // strip the ms
-  timeDiff /= 1000;
-
-  // get seconds 
-  var seconds = Math.round(timeDiff);
-  console.log(seconds + " seconds");
-}
-
-
+/**
+ * Get the total number of message objects recorded for the
+ * specified brokerID.
+ * 
+ * @param {string} brokerID 
+ */
 const getTotalNumberOfMessagesForBroker = async (brokerID) => {
     let contractInstance = await messageBroadcasterContract.deployed();
     let claimResult = await contractInstance.getTotalNumberOfMessagesForBroker(brokerID);
     console.log("Messages: ", claimResult.toNumber());
 };
-  
+
+
+ module.exports = {authoriseDataAccessClaim, authoriseDataPublishClaim, getPublishedTimestamps};
+
 
   
-// --- Testing -----
-const keyPair = {
-    address: process.env.EthrDID_ADDRESS_IOT_PI,
-    privateKey: process.env.PRIVATE_KEY_IOT_PI
-};
-
-// getTotalNumberOfMessagesForBroker(BROKER_ID);
-
-// Instantiate the DID for this device
-const myDID = new EthrDID({
-    ...keyPair,
-    provider: web3,
-    registry: process.env.ETHEREUM_DID_REGISTRY_ADDRESS
-});
-
-//---------- Testing -------------------------------------------------------------------
-//   messages = [];
-//   messages.push("Test data");
-//   messages.push("And this is more data");
-//   const tokenString = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NkstUiJ9.eyJpYXQiOjE1ODg1OTgzMjIsImV4cCI6Mjk1NzQ3MzQyNSwiYXVkIjoiZGlkOmV0aHI6MHgyOTRmZjcxYjI4M2IxNWZjMjE4ZjRkZGFkMTY5MjI2MzczZjgzYzY3IiwiY2xhaW1zIjp7Im5hbWUiOiJNUVRUX1B1Ymxpc2hDbGFpbSIsImFkbWluIjpmYWxzZSwicHVibGlzaE1RVFQiOnRydWV9LCJuYW1lIjoiUHVibGlzaCBNUVRUIGZvciBkaWQ6ZXRocjoweDI5NGZmNzFiMjgzYjE1ZmMyMThmNGRkYWQxNjkyMjYzNzNmODNjNjciLCJpc3MiOiJkaWQ6ZXRocjoweDlkMTk2M2VjZDVhZjY1ZmYxZjA0N2Y5YjE3NzIwN2RhYTBmOTBiYWMifQ.1FfD7jwHf8RkuHCHHR6m12WRl1FKpaEAt-KxvlkOkymlSuMyWZRXXe0IR1AMYjbY13bTPop7VydVJM6k4b6KigA";
-//   start();
-//   authoriseDataPublishClaim(tokenString, myDID, messages, BROKER_ID ).then(result => {
-//       console.log("Done.", result);
-//       end();
-//       process.exit();
-//   });
-//   submitToStorage(messages, BROKER_ID).then(result => {
-//       end();
-//       console.log("result: ", result);
-//   });
-//let timeStmp = new Date().getTime().toString();
-
-// broadcastToLedger(BROKER_ID, timeStmp, "TestCID1257578948").then(result => {
-//     end();
-//     process.exit();
-//     //console.log("res", result);
-//});
-  
-//  let previousData = getIoTData().then(response => {
-//     console.log(response);
-//  });
  

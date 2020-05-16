@@ -89,14 +89,3 @@ const getNumberOfClaims = () => {
     });
 };
 
-
-//----------- Test Code -----------------------
-
-ALICE_CLAIM = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NkstUiJ9.eyJpYXQiOjE1ODk2MzYxNjYsImV4cCI6MTk1NzQ2MzQyMSwiYXVkIjoiZGlkOmV0aHI6MHhmMjRhNzI2MGQxMDA3NTdlZGI5OWY0NTRlNWFlOTQ3Y2UzN2M1ZGE0IiwiY2xhaW1zIjp7Im5hbWUiOiJNUVRUX0FjY2Vzc0NsYWltIiwiYWRtaW4iOmZhbHNlLCJyZWFkTVFUVCI6dHJ1ZSwic29tZXRoaW5nRWxzZSI6dHJ1ZX0sIm5hbWUiOiJSZWFkIE1RVFQgZm9yIGRpZDpldGhyOjB4ZjI0YTcyNjBkMTAwNzU3ZWRiOTlmNDU0ZTVhZTk0N2NlMzdjNWRhNCIsImlzcyI6ImRpZDpldGhyOjB4OWQxOTYzZWNkNWFmNjVmZjFmMDQ3ZjliMTc3MjA3ZGFhMGY5MGJhYyJ9.UBbbniqhUti_bg6fuSAzpxO2sZ0x9rbIdKq8eRlH_Wu71XFgjojxbX92a-Qa1pYPgenhgcRwoKtx8aYEiVYeOgE";
-//resolveMyDID();
-//getClaimAndIoTData("1589620285606");
-//requestDataWithMyClaim(ALICE_CLAIM, "1589620285606");
-//getAvailableTimestamps(ALICE_CLAIM);
-//getNumberOfClaims();
-
-
