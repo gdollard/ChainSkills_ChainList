@@ -151,9 +151,8 @@ const submitToStorage = async (messages, brokerID) => {
     {
         console.log('Added file, returned CID:', file.path, file.cid.toString());
         cid = file.cid.toString();
-        
     }
-    node.stop();
+    node.stop(); //release lock
     return cid;
   };
 

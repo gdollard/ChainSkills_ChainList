@@ -32,8 +32,9 @@ async function main (messageFileFullPath) {
  */
 const testGetDataFromNode = async() => {
     const node = await IPFS.create();
-    const data = Buffer.concat(await all(node.cat('QmRGWqDqh3E1QcUNwJ8x2kCoJ6fXpJ9f6Rxr1oYS52tJb4')));
-    console.log('Added file contents:', data.toString());
+    const data = Buffer.concat(await all(node.cat('QmRoGmiDi1djdTYEXBRpGTEkBvsht1pSpZ9py9tWa128aC'))); // QmYYocHF5hQMufy6hZQcFPqSgqRSx4Eb4nT7FYoHgwRBke
+    console.log('Contents from stored file:', data.toString());
+    node.stop();
 }
 
 const writeToFile = (message) => {
@@ -83,7 +84,7 @@ const deleteMessageFile = (filename) => {
 // };
 
 //writeToFile("New string");
-appendFile("this is some text 4");
+//appendFile("this is some text 4");
 
 testGetDataFromNode();
 

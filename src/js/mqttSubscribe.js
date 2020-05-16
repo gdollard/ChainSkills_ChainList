@@ -11,10 +11,11 @@ const authDataPublish = require('./ServiceProvider').authoriseDataPublishClaim;
 var File = require("file-class");
 var mqtt = require('mqtt');
 const HDWalletProvider = require("truffle-hdwallet-provider");
+var walletProvider =  new HDWalletProvider(process.env.MNEMONIC, "https://ropsten.infura.io/v3/" + process.env.INFURA_API_KEY);
 require('dotenv').config();
 const Web3 = require('web3');
 var ganacheProvider = new Web3.providers.HttpProvider("http://localhost:7545");
-var web3 = new Web3(ganacheProvider);
+var web3 = new Web3(walletProvider); 
 
 //const Web3 = require('web3');
 //var HDwalletProvider =  new HDWalletProvider(process.env.MNEMONIC, "https://ropsten.infura.io/v3/" + process.env.INFURA_API_KEY);
@@ -25,10 +26,11 @@ const messageBroadcasterArtifact = require('../../build/contracts/BrokerMessageR
 
 const BROKER_ID = "MosquittoBroker_CK_IE_0";
 let messageCount = 0;
-const homedir = require('os').homedir();
-const MESSAGE_FILE_NAME = homedir+"/input.txt";
+//const homedir = require('os').homedir();
+const MESSAGE_FILE_NAME = "./input.txt";
+const MESSAGE_FILE_NAME_SP = "./input_SP.txt";
 
-console.log("INPUT NAME:", MESSAGE_FILE_NAME);
+
 const mqtt_options = {
   username: process.env.MOSQUITTO_USERNAME,
   password: process.env.MOSQUITTO_PASSWORD
@@ -63,12 +65,14 @@ mqttClient.on('connect', function () {
 mqttClient.on('message', function (topic, message) {
     console.log("Received a message: %s on topic %s, next up write this to the ledger if authorised.", message.toString(), topic);
     appendMessageToFile(message);
-    messageCount++
-    if(messageCount == process.env.MESSAGE_BUFFER_LIMIT) {
+    //openAndAppend(message);
+    //writeMessageToStream(message);
+    messageCount++;
+    if(messageCount >= process.env.MESSAGE_BUFFER_LIMIT) {
       //publishData();
       publishDataWithExistingClaim(tokenString); //publish with a claim (faster)
+      messageCount=0;
     }
-    //client.end();
   });
 
 
@@ -102,11 +106,11 @@ const publishData = async () => {
       authDataPublish(claim, myDID, MESSAGE_FILE_NAME, BROKER_ID).then(auth => {
           console.log("Returned Transaction Receipt:", auth);
           //clear out local messages, no longer needed
-          deleteMessageFile(MESSAGE_FILE_NAME);
+          // deleteMessageFile();
+          clearFile();
       });
   }).catch(error => {
-    console.log("Failed to publish the messages: \"%s\". Please make sure your claim is valid or"
-      + " try requesting a new claim before publishing.", error.message);
+    console.log("Failed to publish the messages: \"%s\"", error.message);
   });
 };
 
@@ -119,13 +123,45 @@ const publishData = async () => {
  */
 const publishDataWithExistingClaim = async (claim) => {
   console.log("Calling Service Provider to publish Messages..");
-  authDataPublish(claim, myDID, MESSAGE_FILE_NAME, BROKER_ID).then((auth) => {
-    console.log("Data was successfully published.");
-    //clear out local messages, no longer needed
-    deleteMessageFile(MESSAGE_FILE_NAME);
-  }).catch(error => {
-    console.log("Failed to publish the messages: \"%s\". Please make sure your claim is valid or"
-      + " try requesting a new claim before publishing.", error.message);
+
+  //copy the file and send it to the SP (to avoid locking issues back here)
+  fs.copyFile(MESSAGE_FILE_NAME, MESSAGE_FILE_NAME_SP, (err) => {
+    if (err) throw err;
+    
+    console.log('File copied...');
+    authDataPublish(claim, myDID, MESSAGE_FILE_NAME_SP, BROKER_ID).then((auth) => {
+        console.log("Data was successfully published.");
+        //clear out local messages, no longer needed
+        clearFile();
+        deleteSPMessageFile();
+      }).catch(error => {
+        console.log("Failed to publish the messages: \"%s\"", error);
+    });
+  });
+}
+
+const writeMessageToStream = (message) => {
+  const writeStream = fs.createWriteStream(MESSAGE_FILE_NAME);
+  writeStream.write(message, 'utf8', error => {
+    // close the stream
+    writeStream.end();
+  });
+  // the finish event is emitted when all data has been flushed from the stream
+  writeStream.on('finish', () => {
+    console.log('----------------------------------------');
+  });
+}
+
+
+const openAndAppend = (message) => {
+  fs.open(MESSAGE_FILE_NAME, 'a', (err, fd) => {
+    if (err) throw err;
+    fs.appendFile(fd, message, 'utf8', (err) => {
+      fs.close(fd, (err) => {
+        if (err) throw err;
+      });
+      if (err) throw err;
+    });
   });
 }
 
@@ -136,21 +172,29 @@ const publishDataWithExistingClaim = async (claim) => {
 const appendMessageToFile = (message) => {
   fs.appendFile(MESSAGE_FILE_NAME, message + '\n', (err) => {
       if (err) throw err;
-  });
+  });  
 };
 
-const deleteMessageFile = (filename) => {
-  fs.unlink(filename, function(err) {
+const deleteSPMessageFile = () => {
+  //delete the file that was sent to the Service Provider
+  fs.unlink(MESSAGE_FILE_NAME_SP, function(err) {
       if (err) {
          return console.error(err);
       }
       else {
         console.log("Message file deleted.");
-        messageCount=0;
       }
       
    });
 };
+
+//wipe the contents of the message broker input file
+const clearFile = () => {
+  fs.writeFile(MESSAGE_FILE_NAME, "", (err) => {
+    if (err) throw err;
+    console.log('File reset.');
+  });
+}
 
 
 let startTime, endTime;
@@ -177,7 +221,7 @@ const testpublishData = () => {
   //  messages.push("Test data");
   //  messages.push("And this is more data");
   //  messages.push("Broker time: 11:48 Fri May 16");
-  appendMessageToFile("Is this the last message??");
+  //appendMessageToFile("Is this the last message??");
   start();
   //publishData(); // request a claim AND publish data 
   publishDataWithExistingClaim(tokenString); //publish data with an existing claim (faster)
