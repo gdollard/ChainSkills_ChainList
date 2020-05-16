@@ -1,3 +1,3 @@
-# Chainlist - Your classifieds on Ethereum
+# Secure and Self-Sovereign DataManagement for IoT Devices UsingDistributed Ledger Technology
 
-POC work for decentralised identity with ether-did-registry
+Proof-of-concept work for decentralised identity with ether-did-registry.
