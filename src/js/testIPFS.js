@@ -32,7 +32,7 @@ async function main (messageFileFullPath) {
  */
 const testGetDataFromNode = async() => {
     const node = await IPFS.create();
-    const data = Buffer.concat(await all(node.cat('QmcHtsrdNwh8DjeySHCaK9xdwVhHwfqWsnKugA9Chdvpmi')));
+    const data = Buffer.concat(await all(node.cat('QmRGWqDqh3E1QcUNwJ8x2kCoJ6fXpJ9f6Rxr1oYS52tJb4')));
     console.log('Added file contents:', data.toString());
 }
 

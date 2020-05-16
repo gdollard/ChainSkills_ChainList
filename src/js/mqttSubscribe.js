@@ -24,16 +24,17 @@ const messageBroadcasterArtifact = require('../../build/contracts/BrokerMessageR
 
 
 const BROKER_ID = "MosquittoBroker_CK_IE_0";
-let messages = [];
-const MESSAGE_FILE_NAME = "input.txt";
-const fileName = "input.txt";
+let messageCount = 0;
+const homedir = require('os').homedir();
+const MESSAGE_FILE_NAME = homedir+"/input.txt";
 
+console.log("INPUT NAME:", MESSAGE_FILE_NAME);
 const mqtt_options = {
   username: process.env.MOSQUITTO_USERNAME,
   password: process.env.MOSQUITTO_PASSWORD
 };
 
-//var client  = mqtt.connect('mqtt://localhost:1883', mqtt_options);
+var mqttClient  = mqtt.connect('mqtt://localhost:1883', mqtt_options);
 
 const keyPair = {
     address: process.env.EthrDID_ADDRESS_IOT_PI,
@@ -49,27 +50,26 @@ const myDID = new EthrDID({
 });
 
 
-// Once we connect to the broker provide a sub function
-// client.on('connect', function () {
-//   client.subscribe('TestTopic', function (err) {
-//     if (!err) {
-//       console.log("Connected to broker...");
-//     }
-//   });
-// });
+// Once we connect to the broker provide a subscribe function
+mqttClient.on('connect', function () {
+  mqttClient.subscribe('TestTopic', function (err) {
+    if (!err) {
+      console.log("Connected to broker...");
+    }
+  });
+});
 
-// specify a callback when a message is published
-// client.on('message', function (topic, message) {
-//     // message is Buffer
-//     console.log("Received a message: %s on topic %s, next up write this to the ledger if authorised.", message.toString(), topic);
-//     let messageSize = messages.push(message+ '\n');
-//     appendMessageToFile(message);
-
-//     if(messageSize == process.env.MESSAGE_BUFFER_LIMIT) {
-//       publishData();
-//     }
-//     //client.end();
-//   });
+// Called when our client receives a message from the broker.
+mqttClient.on('message', function (topic, message) {
+    console.log("Received a message: %s on topic %s, next up write this to the ledger if authorised.", message.toString(), topic);
+    appendMessageToFile(message);
+    messageCount++
+    if(messageCount == process.env.MESSAGE_BUFFER_LIMIT) {
+      //publishData();
+      publishDataWithExistingClaim(tokenString); //publish with a claim (faster)
+    }
+    //client.end();
+  });
 
 
 
@@ -101,7 +101,8 @@ const publishData = async () => {
       console.log(">>>>> mqttSubscriber: Publishing messages to storage <<<<<<");
       authDataPublish(claim, myDID, MESSAGE_FILE_NAME, BROKER_ID).then(auth => {
           console.log("Returned Transaction Receipt:", auth);
-          messages = [];
+          //clear out local messages, no longer needed
+          deleteMessageFile(MESSAGE_FILE_NAME);
       });
   }).catch(error => {
     console.log("Failed to publish the messages: \"%s\". Please make sure your claim is valid or"
@@ -143,6 +144,11 @@ const deleteMessageFile = (filename) => {
       if (err) {
          return console.error(err);
       }
+      else {
+        console.log("Message file deleted.");
+        messageCount=0;
+      }
+      
    });
 };
 
@@ -189,6 +195,6 @@ const testpublishData = () => {
     //});
 };
 
-testpublishData();
+//testpublishData();
 
 
