@@ -39,7 +39,7 @@ contract BrokerMessageRepo {
     }
 
     // Get all Message structs for given broker ID
-    function getHashes(string memory _brokerID) public view onlyOwner returns (Message[] memory) {
+    function getHashes(string memory _brokerID) public view returns (Message[] memory) {
         return messages[_brokerID];
     }
 

@@ -47,9 +47,9 @@ const getClaimAndIoTData = (timestamp) => {
             console.log("Something went wrong, no token issued.");
             process.exit(1);
         } else {
-            console.log("Alice's Claim: ", result);
-            authDataAccess(result, ethrDid, BROKER_ID, timestamp).then(auth => {
-                console.log("IOT Data ?", auth);
+            //console.log("Alice's Claim: ", result);
+            authDataAccess(result, ethrDid, BROKER_ID, timestamp).then(data => {
+                console.log("Returned Data from Decenralised Storage:\n", data);
                 process.exit(0);
             });
         }
@@ -62,7 +62,7 @@ const getClaimAndIoTData = (timestamp) => {
  */
 const requestDataWithMyClaim = (claim, timestamp) => {
     authDataAccess(claim, ethrDid, BROKER_ID, timestamp).then(result => {
-        console.log("IOT Data ?", result);
+        console.log("Returned Data from Decenralised Storage:\n", result);
         process.exit(0);
     });
 };
@@ -89,3 +89,12 @@ const getNumberOfClaims = () => {
     });
 };
 
+// testing
+
+// 1. Get available timestamps
+//getAvailableTimestamps(process.env.ALICE_CLAIM);
+
+// 2. Request the data, either with an existing claim or request a claim too
+//requestDataWithMyClaim(process.env.ALICE_CLAIM, '1589832099917');
+// OR
+//getClaimAndIoTData('1589832099917');

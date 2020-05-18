@@ -15,12 +15,13 @@ require('dotenv').config();
 const Web3 = require('web3');
 var web3 = new Web3(walletProvider); 
 const EthrDID = require('ethr-did');
+const EXISTING_TOKEN = process.env.MQTT_SUBSCRIBER_JWT;
 
 
 const BROKER_ID = "MosquittoBroker_CK_IE_0";
-let messageCount = 0;
 const MESSAGE_FILE_NAME = "./input.txt";
 const MESSAGE_FILE_NAME_SP = "./input_SP.txt";
+let messages = [];
 
 
 const mqtt_options = {
@@ -55,30 +56,29 @@ mqttClient.on('connect', function () {
 
 // Called when our client receives a message from the broker.
 mqttClient.on('message', function (topic, message) {
-    console.log("Received a message: %s on topic %s, next up write this to the ledger if authorised.", message.toString(), topic);
-    appendMessageToFile(message);
-    messageCount++;
-    if(messageCount >= process.env.MESSAGE_BUFFER_LIMIT) {
-      //publishData();
-      publishDataWithExistingClaim(tokenString); //publish with a claim (faster)
-      messageCount=0;
+    //console.log("Received a message: %s on topic %s, next up write this to the ledger if authorised.", message.toString(), topic);
+    let messageCount = messages.push(message+ '\n');
+    
+    if(messageCount == process.env.MESSAGE_BUFFER_LIMIT) {
+      publishData();
+      //publishDataWithExistingClaim(EXISTING_TOKEN); //publish with a claim (faster)
     }
   });
 
 
 /**
- * This function publishes the latest set of messages to the IPFS data store.
- * It will then write the Content Identifier (CID) to our BrokerMsgRepo smart contract.
+ * This function will request a claim to publish the latest set of messages to the IPFS data store.
+ * If it receives the claim it will then write the Content Identifier (CID) to our 
+ * BrokerMsgRepo smart contract.
+ * 
  */
 const publishData = async () => {
   console.log("Received request to publish, requesting claim first..");
   requestDataPublishClaim(myDID).then((claim) => {
-      console.log(">>>>> mqttSubscriber: Publishing messages to storage <<<<<<");
-      authDataPublish(claim, myDID, MESSAGE_FILE_NAME, BROKER_ID).then(auth => {
-          console.log("Returned Transaction Receipt:", auth);
-          //clear out local messages, no longer needed
-          clearFile();
-          deleteSPMessageFile();
+      console.log(">>>>> mqttSubscriber: Claim to publish data granted <<<<<<");
+      authDataPublish(claim, myDID, messages, BROKER_ID).then(auth => {
+        console.log(">>>>> mqttSubscriber: Data was successfully published <<<<<<");
+          messages = [];
       });
   }).catch(error => {
     console.log("Failed to publish the messages: \"%s\"", error.message);
@@ -99,11 +99,9 @@ const publishDataWithExistingClaim = async (claim) => {
   fs.copyFile(MESSAGE_FILE_NAME, MESSAGE_FILE_NAME_SP, (err) => {
     if (err) throw err;
   
-    authDataPublish(claim, myDID, MESSAGE_FILE_NAME_SP, BROKER_ID).then((auth) => {
-        console.log("Data was successfully published.");
-        //clear out local messages, no longer needed
-        clearFile();
-        deleteSPMessageFile();
+    authDataPublish(claim, myDID, messages, BROKER_ID).then((auth) => {
+      console.log(">>>>> mqttSubscriber: Data was successfully published <<<<<<");
+        messages = [];
       }).catch(error => {
         console.log("Failed to publish the messages: \"%s\"", error);
     });
@@ -111,34 +109,4 @@ const publishDataWithExistingClaim = async (claim) => {
 };
 
 
-/*
-* As the broker receives messages it will add them to the file (if file storage is preferred over
-* in-memory arrays).
-*/
-const appendMessageToFile = (message) => {
-  fs.appendFile(MESSAGE_FILE_NAME, message + '\n', (err) => {
-      if (err) throw err;
-  });  
-};
-
-const deleteSPMessageFile = () => {
-  //delete the file that was sent to the Service Provider
-  fs.unlink(MESSAGE_FILE_NAME_SP, function(err) {
-      if (err) {
-         return console.error(err);
-      }
-      else {
-        console.log("Message file deleted.");
-      }
-      
-   });
-};
-
-//wipe the contents of the message broker input file
-const clearFile = () => {
-  fs.writeFile(MESSAGE_FILE_NAME, "", (err) => {
-    if (err) throw err;
-    console.log('File reset.');
-  });
-}
 

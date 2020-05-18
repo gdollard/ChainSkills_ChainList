@@ -17,11 +17,15 @@ const getResolver = require('ethr-did-resolver').getResolver;
 const IPFS = require('ipfs');
 const all = require('it-all');
 const EthrDID = require('ethr-did');
+var ganacheProvider = new Web3.providers.HttpProvider("http://localhost:7545");
+
+
 
 const messageBroadcasterArtifact = require('../../build/contracts/BrokerMessageRepo.json');
 var truffleContract = require("@truffle/contract");
 let messageBroadcasterContract = truffleContract(messageBroadcasterArtifact);
-messageBroadcasterContract.setProvider(walletProvider);
+//messageBroadcasterContract.setProvider(walletProvider);
+messageBroadcasterContract.setProvider(ganacheProvider);
 const ETHEREUM_DID_REGISTRY_ADDRESS = '0xdCa7EF03e98e0DC2B855bE647C39ABe984fcF21B'
 
 // sample broker
@@ -99,11 +103,13 @@ const authoriseDataAccessClaim = async (jwt, didObject, brokerID, timestamp) => 
   * While basically a copy of the other auth claim function the idea is this function could be
   * implemented by a different Service Provider on the network.
   */
- const authoriseDataPublishClaim = async (jwt, didObject, messageFile, brokerID) => {
+ const authoriseDataPublishClaim = async (jwt, didObject, messages, brokerID) => {
     let result = didJWT.verifyJWT(jwt, {resolver: didResolver, audience: didObject.did }).then((error, verifiedResponse) => { 
-            let result = submitMessageFileToStorage(messageFile).then( cid => {
+            let result = submitToStorage(messages).then( cid => {
+                console.log("SP: Broker data successfully written to IPFS Node, CID: ", cid);
                 let timeStmp = new Date().getTime().toString();
                 let broadcastResult = broadcastToLedger(brokerID, timeStmp, cid).then(result => {
+                    console.log("SP: Message Data CID written to the ledger.");
                     return result;
                 });
                 return broadcastResult;
@@ -120,13 +126,39 @@ const authoriseDataAccessClaim = async (jwt, didObject, brokerID, timestamp) => 
  * example: https://ipfs.io/ipfs/Qmb74tGyo7m94jwWb3aMqEr5Jpn7U5r6fBVR5fJ7QvqMnz
  */
  const getIoTData = async(cidHash) => {
-    const node = await IPFS.create();
+    const node = await IPFS.create({silent: true});
     const data = Buffer.concat(await all(node.cat(cidHash)));
     node.stop();
     return data.toString();
   };
 
   
+    /**
+  * Is responsible for taking the chunk of IOT data and invoke the smart contract to persist the data onto an IPFS node. 
+  * It will then ensure the transaction is recorded in the ledger for future requests.
+  * 
+  * 
+  * Publish the received messages to an IPFS data store.
+  * @See https://github.com/ipfs/interface-js-ipfs-core/blob/master/SPEC/FILES.md#cat
+  * 
+  * @param {string}[] messages from the message agent.
+  */
+const submitToStorage = async (messages) => {
+    let mainString = messages.join(' ');
+    const node = await IPFS.create({silent: true});
+    let cid;
+    for await (const file of node.add(mainString)) 
+    {      
+        //console.log(">> CID >>>", JSON.stringify(file));
+        cid = file.cid.toString();
+    }
+    
+    // stopping the node when finished
+    // see: https://discuss.ipfs.io/t/how-to-reset-the-lock-file-programmatically-in-ipfs-0-41-1/7363/2
+    node.stop();
+    return cid;
+  };
+
   /**
    * This function is responsible for taking the chunk of IOT data and invoke 
    * the smart contract to persist the data onto an IPFS node. 
@@ -134,7 +166,7 @@ const authoriseDataAccessClaim = async (jwt, didObject, brokerID, timestamp) => 
    * @param {string} messageFile - full path to file to be published.
    */
   const submitMessageFileToStorage = async (messageFile) => {
-    const node = await IPFS.create()
+    const node = await IPFS.create({silent: true})
     let fileBuffer = fs.readFileSync(messageFile);
     let cid;
     for await (const file of await node.add({
@@ -157,7 +189,7 @@ const authoriseDataAccessClaim = async (jwt, didObject, brokerID, timestamp) => 
  * 
  */
 const broadcastToLedger = async(brokerID, timestamp, hashValue ) => {
-    const accountNumber = process.env.ROPSTEN_ACCOUNT_0_ADDRESS; //GANACHE_ADDRESS_ACCOUNT_0
+    const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0; //ROPSTEN_ACCOUNT_0_ADDRESS; 
     let contractInstance = await messageBroadcasterContract.deployed();
     let result = await contractInstance.addMessageChunkReference(brokerID, timestamp, hashValue, {from: accountNumber, gas: 500000} ).then
             (result => {

@@ -6,7 +6,7 @@ const HDWalletProvider = require("truffle-hdwallet-provider");
 require('dotenv').config(); //need this module to retrieve the infura mnemonic and API key
 const Web3 = require('web3');
 var HDwalletProvider =  new HDWalletProvider(process.env.MNEMONIC, "https://ropsten.infura.io/v3/" + process.env.INFURA_API_KEY);
-
+var ganacheProvider = new Web3.providers.HttpProvider("http://localhost:7545");
 // set the provider for the web3 interface so it can access the accounts (for fees)
 const web3 = new Web3(HDwalletProvider);
 const DidRegistryContract = require('ethr-did-registry');
@@ -26,7 +26,8 @@ var truffleContract = require("@truffle/contract");
 let trustAnchorContract = truffleContract(trustAnchorArtifact);
 
 // set the provider for the contract so it can be accessed on that network
-trustAnchorContract.setProvider(HDwalletProvider);
+//trustAnchorContract.setProvider(HDwalletProvider);
+trustAnchorContract.setProvider(ganacheProvider);
 
 //Registering Ethr Did To Resolver
 const ethrDidResolver = getResolver({
@@ -144,11 +145,12 @@ const requestDataPublishClaim = async (didObject) => {
     let expiry = 2957473425;
     
     if(didObject.address.toUpperCase() === idOwner.toUpperCase()) {
+        const claimNameForLedger = 'Publish MQTT for '+ didObject.did;
         let theToken = await didJWT.createJWT({ aud: didObject.did, exp: expiry, claims: { 
             name: claimName, 
             admin: false, 
             publishMQTT: true }, 
-            name: 'Publish MQTT for '+ didObject.did},
+            name: claimNameForLedger },
              { alg: `ES256K-R`, 
              issuer: thisDid.did, 
               signer }).catch(error => {
@@ -161,8 +163,8 @@ const requestDataPublishClaim = async (didObject) => {
 
         
         // next add the claim to the ledger
-        let theClaimTxnReceipt = await writeClaimToLedger(claimName, didObject.address, theToken, expiry).catch(error => {
-            console.log("Failed to write the claim to the ledger: ", error);
+        let theClaimTxnReceipt = await writeClaimToLedger(claimNameForLedger, didObject.address, theToken, expiry).catch(error => {
+            console.log("TA: Failed to write the claim to the ledger: ", error);
             return null;
         });
         
@@ -180,13 +182,13 @@ const requestDataPublishClaim = async (didObject) => {
  * This function writes the claim issue details to the ledger.
  * The contract it calls is TrustAnchor.sol
  */
-const writeClaimToLedger = async() => {
-    const accountAddress = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;
-
+const writeClaimToLedger = async(claimName, didAddress, jwt, expiry ) => {
+    const accountAddress = process.env.GANACHE_ADDRESS_ACCOUNT_0;//ROPSTEN_ACCOUNT_0_ADDRESS;
     let trustAnchorInstance = await trustAnchorContract.deployed();
-    let claimResult = trustAnchorInstance.addClaim("MyTestClaim", trustAnchorContractAddress, "test Token", 12345, 
-        {from: accountAddress, gas: 500000}).then
+    let claimResult = trustAnchorInstance.addClaim(claimName, didAddress, jwt, expiry, 
+        {from: accountAddress, gas: 5000000}).then
             (result => {
+                console.log("TA: New claim recorded on ledger for DID: ", didAddress);
                 return result;
         }).catch(function (err) {
         console.log("Promise Rejected", err)});
