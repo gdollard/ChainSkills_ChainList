@@ -30,10 +30,10 @@ async function main (messageFileFullPath) {
 /**
  * Verify we can retrieve previously stored data using a given CID.
  */
-const testGetDataFromNode = async() => {
+const testGetDataFromNode = async(cid) => {
     const node = await IPFS.create();
-    const data = Buffer.concat(await all(node.cat('QmYYocHF5hQMufy6hZQcFPqSgqRSx4Eb4nT7FYoHgwRBke'))); 
-    console.log('Contents from stored file:', data.toString());
+    const data = Buffer.concat(await all(node.cat(cid))); 
+    console.log('Contents from stored file:\n', data.toString());
     node.stop();
 }
 
@@ -86,7 +86,7 @@ const deleteMessageFile = (filename) => {
 //writeToFile("New string");
 //appendFile("this is some text 4");
 
-testGetDataFromNode();
+testGetDataFromNode('QmRFDYFLLEHQ9aEyPP5agetykFJvvXFXSVJmjSvRGdasJv');
 
 const testWriteToIPFS = async () => {
     let cid = await main(MESSAGE_FILE_NAME);

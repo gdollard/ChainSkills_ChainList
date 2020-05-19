@@ -26,8 +26,8 @@ var truffleContract = require("@truffle/contract");
 let trustAnchorContract = truffleContract(trustAnchorArtifact);
 
 // set the provider for the contract so it can be accessed on that network
-//trustAnchorContract.setProvider(HDwalletProvider);
-trustAnchorContract.setProvider(ganacheProvider);
+trustAnchorContract.setProvider(HDwalletProvider);
+//trustAnchorContract.setProvider(ganacheProvider);
 
 //Registering Ethr Did To Resolver
 const ethrDidResolver = getResolver({
@@ -183,7 +183,7 @@ const requestDataPublishClaim = async (didObject) => {
  * The contract it calls is TrustAnchor.sol
  */
 const writeClaimToLedger = async(claimName, didAddress, jwt, expiry ) => {
-    const accountAddress = process.env.GANACHE_ADDRESS_ACCOUNT_0;//ROPSTEN_ACCOUNT_0_ADDRESS;
+    const accountAddress = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;//GANACHE_ADDRESS_ACCOUNT_0;//;
     let trustAnchorInstance = await trustAnchorContract.deployed();
     let claimResult = trustAnchorInstance.addClaim(claimName, didAddress, jwt, expiry, 
         {from: accountAddress, gas: 5000000}).then

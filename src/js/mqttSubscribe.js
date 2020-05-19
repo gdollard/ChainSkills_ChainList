@@ -54,14 +54,25 @@ mqttClient.on('connect', function () {
   });
 });
 
+let dotCounter = 0;
 // Called when our client receives a message from the broker.
 mqttClient.on('message', function (topic, message) {
+  if(dotCounter == 0) {
+    console.log(".");
+    dotCounter++;
+  } else if(dotCounter == 1) {
+    console.log("..");
+    dotCounter++;
+  } else {
+    console.log("...");
+    dotCounter = 0;
+  }
     //console.log("Received a message: %s on topic %s, next up write this to the ledger if authorised.", message.toString(), topic);
     let messageCount = messages.push(message+ '\n');
     
     if(messageCount == process.env.MESSAGE_BUFFER_LIMIT) {
-      publishData();
-      //publishDataWithExistingClaim(EXISTING_TOKEN); //publish with a claim (faster)
+      //publishData();
+      publishDataWithExistingClaim(EXISTING_TOKEN); //publish with a claim (faster)
     }
   });
 

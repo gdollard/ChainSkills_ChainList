@@ -24,8 +24,8 @@ var ganacheProvider = new Web3.providers.HttpProvider("http://localhost:7545");
 const messageBroadcasterArtifact = require('../../build/contracts/BrokerMessageRepo.json');
 var truffleContract = require("@truffle/contract");
 let messageBroadcasterContract = truffleContract(messageBroadcasterArtifact);
-//messageBroadcasterContract.setProvider(walletProvider);
-messageBroadcasterContract.setProvider(ganacheProvider);
+messageBroadcasterContract.setProvider(walletProvider);
+//messageBroadcasterContract.setProvider(ganacheProvider);
 const ETHEREUM_DID_REGISTRY_ADDRESS = '0xdCa7EF03e98e0DC2B855bE647C39ABe984fcF21B'
 
 // sample broker
@@ -106,7 +106,7 @@ const authoriseDataAccessClaim = async (jwt, didObject, brokerID, timestamp) => 
  const authoriseDataPublishClaim = async (jwt, didObject, messages, brokerID) => {
     let result = didJWT.verifyJWT(jwt, {resolver: didResolver, audience: didObject.did }).then((error, verifiedResponse) => { 
             let result = submitToStorage(messages).then( cid => {
-                console.log("SP: Broker data successfully written to IPFS Node, CID: ", cid);
+                console.log("SP: Broker data successfully written to IPFS Node, writing CID %s to the BrokerMsgRepo smart contract. ", cid);
                 let timeStmp = new Date().getTime().toString();
                 let broadcastResult = broadcastToLedger(brokerID, timeStmp, cid).then(result => {
                     console.log("SP: Message Data CID written to the ledger.");
@@ -189,7 +189,7 @@ const submitToStorage = async (messages) => {
  * 
  */
 const broadcastToLedger = async(brokerID, timestamp, hashValue ) => {
-    const accountNumber = process.env.GANACHE_ADDRESS_ACCOUNT_0; //ROPSTEN_ACCOUNT_0_ADDRESS; 
+    const accountNumber = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;//GANACHE_ADDRESS_ACCOUNT_0; //
     let contractInstance = await messageBroadcasterContract.deployed();
     let result = await contractInstance.addMessageChunkReference(brokerID, timestamp, hashValue, {from: accountNumber, gas: 500000} ).then
             (result => {

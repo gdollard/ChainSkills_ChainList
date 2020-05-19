@@ -47,7 +47,7 @@ const getClaimAndIoTData = (timestamp) => {
             console.log("Something went wrong, no token issued.");
             process.exit(1);
         } else {
-            //console.log("Alice's Claim: ", result);
+            console.log("Alice: Received a signed claim, requesting data from Service Provider.. ", result);
             authDataAccess(result, ethrDid, BROKER_ID, timestamp).then(data => {
                 console.log("Returned Data from Decenralised Storage:\n", data);
                 process.exit(0);
@@ -92,9 +92,9 @@ const getNumberOfClaims = () => {
 // testing
 
 // 1. Get available timestamps
-//getAvailableTimestamps(process.env.ALICE_CLAIM);
+// getAvailableTimestamps(process.env.ALICE_CLAIM);
 
 // 2. Request the data, either with an existing claim or request a claim too
-//requestDataWithMyClaim(process.env.ALICE_CLAIM, '1589832099917');
+//requestDataWithMyClaim(process.env.ALICE_CLAIM, '1589919106025');
 // OR
-//getClaimAndIoTData('1589832099917');
+getClaimAndIoTData('1589832099917');
