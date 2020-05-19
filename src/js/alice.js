@@ -4,7 +4,7 @@
  * 
  * G.Dollard
  */
-
+require('dotenv').config();
 const EthrDID = require('ethr-did');
 const ETHEREUM_DID_REGISTRY_ADDRESS = require('./TrustAnchor').ETHEREUM_DID_REGISTRY_ADDRESS;
 const requestDataAccessClaim = require('./TrustAnchor').requestDataAccessClaim;
@@ -13,7 +13,7 @@ const getTimestampsForPublishedFiles = require('./ServiceProvider').getPublished
 const authDataAccess = require('./ServiceProvider').authoriseDataAccessClaim;
 const web3 = require('./TrustAnchor').web3;
 const resolveDID = require('./TrustAnchor').resolveDID;
-const BROKER_ID = "MosquittoBroker_CK_IE_0";
+const BROKER_ID = process.env.MOSQUITTO_BROKER_NAME;
 
 const keyPair = {
     address: process.env.EthrDID_ADDRESS_ALICE,
@@ -40,8 +40,11 @@ const resolveMyDID = () => {
     });
 };
 
-
-const getClaimAndIoTData = (timestamp) => {
+/**
+ * 
+ * @param {string} timestamp - time when a CID was written to the ledger.
+ */
+const getClaimAndIoTDataAtTime = (timestamp) => {
     requestDataAccessClaim(ethrDid).then((result) => {
         if(result === null) {
             console.log("Something went wrong, no token issued.");
@@ -95,6 +98,8 @@ const getNumberOfClaims = () => {
 // getAvailableTimestamps(process.env.ALICE_CLAIM);
 
 // 2. Request the data, either with an existing claim or request a claim too
-//requestDataWithMyClaim(process.env.ALICE_CLAIM, '1589919106025');
+requestDataWithMyClaim(process.env.ALICE_CLAIM, '1589923199185');
 // OR
-getClaimAndIoTData('1589832099917');
+// getClaimAndIoTDataAtTime('1589919106025'); 
+
+// timestamps posted to Ropsten: [ '1589919106025', '1589920243424', '1589920547829', '1589923911989' ]

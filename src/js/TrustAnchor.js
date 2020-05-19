@@ -5,15 +5,15 @@
 const HDWalletProvider = require("truffle-hdwallet-provider");
 require('dotenv').config(); //need this module to retrieve the infura mnemonic and API key
 const Web3 = require('web3');
-var HDwalletProvider =  new HDWalletProvider(process.env.MNEMONIC, "https://ropsten.infura.io/v3/" + process.env.INFURA_API_KEY);
+var walletProvider =  new HDWalletProvider(process.env.MNEMONIC, "https://ropsten.infura.io/v3/" + process.env.INFURA_API_KEY);
 var ganacheProvider = new Web3.providers.HttpProvider("http://localhost:7545");
 // set the provider for the web3 interface so it can access the accounts (for fees)
-const web3 = new Web3(HDwalletProvider);
+const web3 = new Web3(walletProvider);
 const DidRegistryContract = require('ethr-did-registry');
 const Contract = require("@truffle/contract");
 const truffleDIDRegistryContract = Contract(DidRegistryContract);
 const trustAnchorArtifact = require('../../build/contracts/TrustAnchor.json');
-truffleDIDRegistryContract.setProvider(HDwalletProvider);
+truffleDIDRegistryContract.setProvider(walletProvider);
 const EthrDID = require('ethr-did');
 require('ethr-did');
 const ETHEREUM_DID_REGISTRY_ADDRESS = "0xdca7ef03e98e0dc2b855be647c39abe984fcf21b";
@@ -25,9 +25,27 @@ const trustAnchorContractAddress = '0x56A0964d2aBc42bB768A29c6c188097b451956F5';
 var truffleContract = require("@truffle/contract");
 let trustAnchorContract = truffleContract(trustAnchorArtifact);
 
+const ropstenNetwork = {
+    provider: walletProvider,
+    account: process.env.ROPSTEN_ACCOUNT_0_ADDRESS
+};
+
+const ganacheNetwork = {
+    provider: ganacheProvider,
+    account: process.env.GANACHE_ADDRESS_ACCOUNT_0
+};
+
+let activeNetwork = ganacheNetwork;
+if(process.env.NETWORK_SWITCH == 0) {
+    activeNetwork = ropstenNetwork;
+    console.log("TA: Initialised with the Ropsten ledger...");
+}
+else {
+    console.log("TA: Initialised with a local Ganache node...");
+}
+
 // set the provider for the contract so it can be accessed on that network
-trustAnchorContract.setProvider(HDwalletProvider);
-//trustAnchorContract.setProvider(ganacheProvider);
+trustAnchorContract.setProvider(activeNetwork.provider);
 
 //Registering Ethr Did To Resolver
 const ethrDidResolver = getResolver({
@@ -183,7 +201,7 @@ const requestDataPublishClaim = async (didObject) => {
  * The contract it calls is TrustAnchor.sol
  */
 const writeClaimToLedger = async(claimName, didAddress, jwt, expiry ) => {
-    const accountAddress = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;//GANACHE_ADDRESS_ACCOUNT_0;//;
+    const accountAddress = activeNetwork.account;
     let trustAnchorInstance = await trustAnchorContract.deployed();
     let claimResult = trustAnchorInstance.addClaim(claimName, didAddress, jwt, expiry, 
         {from: accountAddress, gas: 5000000}).then

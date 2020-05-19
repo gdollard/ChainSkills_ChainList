@@ -19,23 +19,40 @@ const all = require('it-all');
 const EthrDID = require('ethr-did');
 var ganacheProvider = new Web3.providers.HttpProvider("http://localhost:7545");
 
+const ropstenNetwork = {
+    provider: walletProvider,
+    account: process.env.ROPSTEN_ACCOUNT_0_ADDRESS
+};
 
+const ganacheNetwork = {
+    provider: ganacheProvider,
+    account: process.env.GANACHE_ADDRESS_ACCOUNT_0
+};
+
+let activeNetwork = ganacheNetwork;
+if(process.env.NETWORK_SWITCH == 0) {
+    activeNetwork = ropstenNetwork;
+    console.log("SP: Initialised with the Ropsten ledger...");
+}
+else {
+    console.log("SP: Initialised with a local Ganache node...");
+}
 
 const messageBroadcasterArtifact = require('../../build/contracts/BrokerMessageRepo.json');
 var truffleContract = require("@truffle/contract");
 let messageBroadcasterContract = truffleContract(messageBroadcasterArtifact);
-messageBroadcasterContract.setProvider(walletProvider);
-//messageBroadcasterContract.setProvider(ganacheProvider);
+messageBroadcasterContract.setProvider(activeNetwork.provider);
 const ETHEREUM_DID_REGISTRY_ADDRESS = '0xdCa7EF03e98e0DC2B855bE647C39ABe984fcF21B'
-
-// sample broker
-const BROKER_ID = "MosquittoBroker_CK_IE_0";
 
 //Registering Ethr Did To Resolver
 const ethrDidResolver = getResolver({
     web3,
     registry: ETHEREUM_DID_REGISTRY_ADDRESS,
-})
+});
+
+
+
+
 /**
  * create a DID resolver based on the ethr DID resolver, if using a different DID Method (uPort, nacl, https etc)
  * I would pass that specific resolver to the Resolver object.
@@ -189,7 +206,7 @@ const submitToStorage = async (messages) => {
  * 
  */
 const broadcastToLedger = async(brokerID, timestamp, hashValue ) => {
-    const accountNumber = process.env.ROPSTEN_ACCOUNT_0_ADDRESS;//GANACHE_ADDRESS_ACCOUNT_0; //
+    const accountNumber = activeNetwork.account;
     let contractInstance = await messageBroadcasterContract.deployed();
     let result = await contractInstance.addMessageChunkReference(brokerID, timestamp, hashValue, {from: accountNumber, gas: 500000} ).then
             (result => {
@@ -207,7 +224,7 @@ const broadcastToLedger = async(brokerID, timestamp, hashValue ) => {
  * @param {string} brokerID - ID of the broker who published the messages.
  */
 const getContentHashes = async(brokerID) => {
-    const accountNumber = process.env.ROPSTEN_ACCOUNT_0_ADDRESS; 
+    const accountNumber = activeNetwork.account;
     let contractInstance = await messageBroadcasterContract.deployed();
     let result = await contractInstance.getHashes(brokerID, {from: accountNumber, gas: 500000} ).then
             (result => {

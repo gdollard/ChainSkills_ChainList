@@ -16,11 +16,7 @@ const Web3 = require('web3');
 var web3 = new Web3(walletProvider); 
 const EthrDID = require('ethr-did');
 const EXISTING_TOKEN = process.env.MQTT_SUBSCRIBER_JWT;
-
-
-const BROKER_ID = "MosquittoBroker_CK_IE_0";
-const MESSAGE_FILE_NAME = "./input.txt";
-const MESSAGE_FILE_NAME_SP = "./input_SP.txt";
+const BROKER_ID = process.env.MOSQUITTO_BROKER_NAME;
 let messages = [];
 
 
@@ -105,18 +101,13 @@ const publishData = async () => {
  */
 const publishDataWithExistingClaim = async (claim) => {
   console.log("Calling Service Provider to publish Messages..");
-
-  //copy the file and send it to the SP (to avoid locking issues back here)
-  fs.copyFile(MESSAGE_FILE_NAME, MESSAGE_FILE_NAME_SP, (err) => {
-    if (err) throw err;
-  
-    authDataPublish(claim, myDID, messages, BROKER_ID).then((auth) => {
-      console.log(">>>>> mqttSubscriber: Data was successfully published <<<<<<");
-        messages = [];
-      }).catch(error => {
-        console.log("Failed to publish the messages: \"%s\"", error);
-    });
+  authDataPublish(claim, myDID, messages, BROKER_ID).then((auth) => {
+    console.log(">>>>> mqttSubscriber: Data was successfully published <<<<<<");
+      messages = [];
+    }).catch(error => {
+      console.log("Failed to publish the messages: \"%s\"", error);
   });
+
 };
 
 
