@@ -41,7 +41,7 @@ const resolveMyDID = () => {
 };
 
 /**
- * 
+ * This function will request a claim first and then request data using the claim.
  * @param {string} timestamp - time when a CID was written to the ledger.
  */
 const getClaimAndIoTDataAtTime = (timestamp) => {
@@ -52,10 +52,23 @@ const getClaimAndIoTDataAtTime = (timestamp) => {
         } else {
             console.log("Alice: Received a signed claim, requesting data from Service Provider.. ", result);
             authDataAccess(result, ethrDid, BROKER_ID, timestamp).then(data => {
-                console.log("Returned Data from Decenralised Storage:\n", data);
+                if(data == null) {
+                    console.log("No data returned from Decenralised Storage");
+                } else {
+                    console.log("Returned Data from Decenralised Storage:\n", data);
+                }
                 process.exit(0);
             });
         }
+    });
+};
+
+/**
+ * Makes a request for a claim, only Data access is available currently.
+ */
+const requestClaim = async () => {
+    return requestDataAccessClaim(ethrDid).then((result) => {
+        return result;
     });
 };
 
@@ -65,8 +78,14 @@ const getClaimAndIoTDataAtTime = (timestamp) => {
  */
 const requestDataWithMyClaim = (claim, timestamp) => {
     authDataAccess(claim, ethrDid, BROKER_ID, timestamp).then(result => {
-        console.log("Returned Data from Decenralised Storage:\n", result);
+        if(result == null) {
+            console.log("No data returned from Decenralised Storage");
+        } else {
+            console.log("Returned Data from Decenralised Storage:\n", result);
+        }
         process.exit(0);
+    }).catch(error => {
+        console.log("An error occurred while requesting remote data request: ", error.message);
     });
 };
 
@@ -92,13 +111,76 @@ const getNumberOfClaims = () => {
     });
 };
 
+
+const program = require('commander');
+program.version('0.0.1');
+
+
+// commands to show or request a claim
+program.command('claim <option>')
+.description('[show | request]')
+.action((arg) => {
+    if(arg == 'show') {
+        console.log("Claim for Alice:\n%s", process.env.ALICE_CLAIM);
+        process.exit();
+    }
+    else if(arg == 'request') {
+        console.log("Requesting a claim...");
+        requestClaim().then(result => {
+            console.log("Claim Granted:\n%s", result);
+            process.exit();
+
+        });
+    }
+    else {
+        console.log("Invalid request, run with -h for help");
+    }
+});
+
+
+// Command to display available timestamps for underlying claim
+program.command('timestamps')
+.description('Get timestamps of available data')
+.action(() => {
+    getAvailableTimestamps(process.env.ALICE_CLAIM);
+});
+
+
+
+
+/**
+ * This command allows the user to request data for a specified timestamp using
+ * Alice's locally held claim or by specifying the -c (--create) it will request a 
+ * new claim as part of the data request.  
+ * NOTE: This command doesn't demonstrate getClaimAndIoTDataAtTime(time) where we request
+ * a claim and data from the same single call. Add a new command for this.
+ */ 
+  program
+  .command('getdata <timestamp>')
+  .description('get data for a given timestamp [-c <claim_string>]')
+  .option('-c,--claim <token_string>', 'JWT to override locally held claim for request,')
+  .action((arg, options) => {
+      if(options.claim) {
+          console.log(`Use the claim: ${options.claim}`);
+          console.log("Requesting new claim as part of data request.");
+          requestDataWithMyClaim(`${options.claim}`, arg);
+      }
+      else {
+          console.log("Requesting data using locally held claim.");
+          requestDataWithMyClaim(process.env.ALICE_CLAIM, arg);
+      }
+  });
+
+program.parse(process.argv);
+
+
 // testing
 
 // 1. Get available timestamps
 // getAvailableTimestamps(process.env.ALICE_CLAIM);
 
 // 2. Request the data, either with an existing claim or request a claim too
-requestDataWithMyClaim(process.env.ALICE_CLAIM, '1589923199185');
+//requestDataWithMyClaim(process.env.ALICE_CLAIM, '1589923199185');
 // OR
 // getClaimAndIoTDataAtTime('1589919106025'); 
 
