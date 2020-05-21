@@ -8,6 +8,7 @@
 var fs = require('fs');
 const requestDataPublishClaim = require('./TrustAnchor').requestDataPublishClaim;
 const authDataPublish = require('./ServiceProvider').authoriseDataPublishClaim;
+const resolveDID = require('./TrustAnchor').resolveDID;
 var mqtt = require('mqtt');
 const HDWalletProvider = require("truffle-hdwallet-provider");
 var walletProvider =  new HDWalletProvider(process.env.MNEMONIC, "https://ropsten.infura.io/v3/" + process.env.INFURA_API_KEY);
@@ -25,7 +26,11 @@ const mqtt_options = {
   password: process.env.MOSQUITTO_PASSWORD
 };
 
-var mqttClient  = mqtt.connect('mqtt://localhost:1883', mqtt_options);
+var mqttClient;
+const connectToBroker = () => {
+  mqttClient = mqtt.connect('mqtt://localhost:1883', mqtt_options);
+}
+
 
 const keyPair = {
     address: process.env.EthrDID_ADDRESS_IOT_PI,
@@ -39,38 +44,6 @@ const myDID = new EthrDID({
     provider: web3,
     registry: process.env.ETHEREUM_DID_REGISTRY_ADDRESS
 });
-
-
-// Once we connect to the broker provide a subscribe function
-mqttClient.on('connect', function () {
-  mqttClient.subscribe('TestTopic', function (err) {
-    if (!err) {
-      console.log("Connected to broker...");
-    }
-  });
-});
-
-let dotCounter = 0;
-// Called when our client receives a message from the broker.
-mqttClient.on('message', function (topic, message) {
-  if(dotCounter == 0) {
-    console.log(".");
-    dotCounter++;
-  } else if(dotCounter == 1) {
-    console.log("..");
-    dotCounter++;
-  } else {
-    console.log("...");
-    dotCounter = 0;
-  }
-    //console.log("Received a message: %s on topic %s, next up write this to the ledger if authorised.", message.toString(), topic);
-    let messageCount = messages.push(message+ '\n');
-    
-    if(messageCount == process.env.MESSAGE_BUFFER_LIMIT) {
-      //publishData();
-      publishDataWithExistingClaim(EXISTING_TOKEN); //publish with a claim (faster)
-    }
-  });
 
 
 /**
@@ -110,5 +83,76 @@ const publishDataWithExistingClaim = async (claim) => {
 
 };
 
+const program = require('commander');
+program.version('0.0.1');
+
+// commands to show or request a claim
+program.command('claim <option>')
+.description('[show]')
+.action((arg) => {
+    if(arg == 'show') {
+        console.log("Claim for Message Agent:\n%s", process.env.MQTT_SUBSCRIBER_JWT);
+        process.exit();
+    }
+    else {
+        console.log("Invalid request, run with -h for help");
+        process.exit();
+    }
+});
+
+
+// command to view the DID for this agent
+program.command('did')
+.description('View the DID for this Message Agent')
+.action(() => {
+  resolveDID(myDID).then((result) => {
+    console.log("DID for this Message Agent:\n%s", result);
+    process.exit();
+  }).catch((error) => {
+    console.log("An error occurred when resolving DID:%s", error.message);
+  });
+});
+
+// command to run the agent
+program.command('run')
+.description('Run the Message Agent')
+.action(() => {
+    connectToBroker();
+    // Once we connect to the broker provide a subscribe function
+    mqttClient.on('connect', function () {
+      mqttClient.subscribe('TestTopic', function (err) {
+        if (!err) {
+          console.log("Connected to broker...");
+        }
+      });
+    });
+  
+    let dotCounter = 0;
+    // Called when our client receives a message from the broker.
+    mqttClient.on('message', function (topic, message) {
+      if(dotCounter == 0) {
+        console.log(".");
+        dotCounter++;
+      } else if(dotCounter == 1) {
+        console.log("..");
+        dotCounter++;
+      } else {
+        console.log("...");
+        dotCounter = 0;
+      }
+        //console.log("Received a message: %s on topic %s, next up write this to the ledger if authorised.", message.toString(), topic);
+        let messageCount = messages.push(message+ '\n');
+        
+        if(messageCount == process.env.MESSAGE_BUFFER_LIMIT) {
+          //publishData();
+          publishDataWithExistingClaim(EXISTING_TOKEN); //publish with a claim (faster)
+        }
+      });
+});
+
+
+
+
+program.parse(process.argv);
 
 

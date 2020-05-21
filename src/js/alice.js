@@ -29,16 +29,6 @@ const keyPair = {
     registry: ETHEREUM_DID_REGISTRY_ADDRESS
 });
 
-/**
- * Convenience method to resovle a DID for Alice.
- */
-const resolveMyDID = () => {
-    let didDocument;
-    resolveDID(ethrDid).then((result) => {
-        didDocument = result;
-        console.log("did Doc: ", didDocument);
-    });
-};
 
 /**
  * This function will request a claim first and then request data using the claim.
@@ -115,6 +105,17 @@ const getNumberOfClaims = () => {
 const program = require('commander');
 program.version('0.0.1');
 
+// command to view the DID for this agent
+program.command('did')
+.description('View the DID for Alice')
+.action(() => {
+  resolveDID(ethrDid).then((result) => {
+    console.log("DID for Alice:\n%s", result);
+    process.exit();
+  }).catch((error) => {
+    console.log("An error occurred when resolving DID:%s", error.message);
+  });
+});
 
 // commands to show or request a claim
 program.command('claim <option>')
@@ -144,8 +145,6 @@ program.command('timestamps')
 .action(() => {
     getAvailableTimestamps(process.env.ALICE_CLAIM);
 });
-
-
 
 
 /**
