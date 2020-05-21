@@ -40,10 +40,10 @@ const getClaimAndIoTDataAtTime = (timestamp) => {
             console.log("Something went wrong, no token issued.");
             process.exit(1);
         } else {
-            console.log("Alice: Received a signed claim, requesting data from Service Provider.. ", result);
+            console.log("Automatic claim request successful, requesting data\n ");
             authDataAccess(result, ethrDid, BROKER_ID, timestamp).then(data => {
                 if(data == null) {
-                    console.log("No data returned from Decenralised Storage");
+                    console.log("No data found on Decenralised Storage for the given timestamp: %s", timestamp);
                 } else {
                     console.log("Returned Data from Decenralised Storage:\n", data);
                 }
@@ -69,7 +69,7 @@ const requestClaim = async () => {
 const requestDataWithMyClaim = (claim, timestamp) => {
     authDataAccess(claim, ethrDid, BROKER_ID, timestamp).then(result => {
         if(result == null) {
-            console.log("No data returned from Decenralised Storage");
+            console.log("No data found on Decenralised Storage for the timestamp: %s", timestamp);
         } else {
             console.log("Returned Data from Decenralised Storage:\n", result);
         }
@@ -85,7 +85,14 @@ const requestDataWithMyClaim = (claim, timestamp) => {
  */
 const getAvailableTimestamps = (claim) => {
     getTimestampsForPublishedFiles(claim, ethrDid, BROKER_ID).then(result => {
-        console.log("Available Timestamps:", result);
+        let localeDates = [];
+        for(let i = 0; i < result.length; i++) {
+            let val = result[i];
+            let dateStamp = new Date(parseInt(val));
+            let fullRep = dateStamp.toLocaleTimeString("en-IE") + " " + dateStamp.toLocaleDateString("en-IE") +" [" + result[i] + "]"
+            localeDates.push(fullRep);
+        }
+        console.log("Available Timestamps:", localeDates);
         process.exit(0);
     });
 };
@@ -156,13 +163,16 @@ program.command('timestamps')
  */ 
   program
   .command('getdata <timestamp>')
-  .description('get data for a given timestamp [-c <claim_string>]')
-  .option('-c,--claim <token_string>', 'JWT to override locally held claim for request,')
+  .description('get data for a given timestamp [-c <claim_string> | -a <automatic claim request>]')
+  .option('-c,--claim <token_string>', 'JWT to override locally held claim for request')
+  .option('-a,--auto', 'Automatically request a claim as part of this command')
   .action((arg, options) => {
       if(options.claim) {
-          console.log(`Use the claim: ${options.claim}`);
-          console.log("Requesting new claim as part of data request.");
+          console.log(`Using the claim: ${options.claim}`);
           requestDataWithMyClaim(`${options.claim}`, arg);
+      } else if(options.auto) {
+          console.log("Automatically requesting claim prior to data request");
+          getClaimAndIoTDataAtTime(arg);
       }
       else {
           console.log("Requesting data using locally held claim.");

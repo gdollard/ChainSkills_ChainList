@@ -124,7 +124,7 @@ const authoriseDataAccessClaim = async (jwt, didObject, brokerID, timestamp) => 
     let result = didJWT.verifyJWT(jwt, {resolver: didResolver, audience: didObject.did }).then((error, verifiedResponse) => { 
             let result = submitToStorage(messages).then( cid => {
                 console.log("SP: Broker data successfully written to IPFS Node, writing CID %s to the BrokerMsgRepo smart contract. ", cid);
-                let timeStmp = new Date().getTime().toString();
+                let timeStmp = Math.round((new Date()).getTime());
                 let broadcastResult = broadcastToLedger(brokerID, timeStmp, cid).then(result => {
                     console.log("SP: Message Data CID written to the ledger.");
                     return result;

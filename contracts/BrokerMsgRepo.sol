@@ -15,7 +15,7 @@ contract BrokerMessageRepo {
 
     // Custom types Messages
     struct Message {
-        string timestamp;
+        uint timestamp;
         string hashVal;
     }
     
@@ -34,7 +34,7 @@ contract BrokerMessageRepo {
     /**
      * Adds a new message struct to the list for the given broker ID.
      */
-    function addMessageChunkReference(string memory _brokerID, string memory _timestamp, string memory _ipfsHash) public onlyOwner returns(uint) {
+    function addMessageChunkReference(string memory _brokerID, uint _timestamp, string memory _ipfsHash) public onlyOwner returns(uint) {
         messages[_brokerID].push(Message(_timestamp, _ipfsHash));
     }
 
