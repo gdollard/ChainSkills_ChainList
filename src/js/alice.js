@@ -14,6 +14,7 @@ const authDataAccess = require('./ServiceProvider').authoriseDataAccessClaim;
 const web3 = require('./TrustAnchor').web3;
 const resolveDID = require('./TrustAnchor').resolveDID;
 const BROKER_ID = process.env.MOSQUITTO_BROKER_NAME;
+const didJWT = require('did-jwt');
 
 const keyPair = {
     address: process.env.EthrDID_ADDRESS_ALICE,
@@ -129,7 +130,7 @@ program.command('claim <option>')
 .description('[show | request]')
 .action((arg) => {
     if(arg == 'show') {
-        console.log("Claim for Alice:\n%s", process.env.ALICE_CLAIM);
+        console.log("Claim for Alice:\n", didJWT.decodeJWT(process.env.ALICE_CLAIM));
         process.exit();
     }
     else if(arg == 'request') {

@@ -18,6 +18,7 @@ var web3 = new Web3(walletProvider);
 const EthrDID = require('ethr-did');
 const EXISTING_TOKEN = process.env.MQTT_SUBSCRIBER_JWT;
 const BROKER_ID = process.env.MOSQUITTO_BROKER_NAME;
+const didJWT = require('did-jwt');
 let messages = [];
 
 
@@ -91,7 +92,7 @@ program.command('claim <option>')
 .description('[show]')
 .action((arg) => {
     if(arg == 'show') {
-        console.log("Claim for Message Agent:\n%s", process.env.MQTT_SUBSCRIBER_JWT);
+        console.log("Claim for Message Agent:\n", didJWT.decodeJWT(process.env.MQTT_SUBSCRIBER_JWT));
         process.exit();
     }
     else {
